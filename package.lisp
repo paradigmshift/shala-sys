@@ -1,5 +1,5 @@
 ;;;; package.lisp
 
 (defpackage #:shala-sys
-  (:use #:cl))
+  (:use #:cl #:hunchentoot #:cl-who))
 
