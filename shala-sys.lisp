@@ -10,7 +10,7 @@
 
 (defparameter *type-map* '((m . 30)
                            (e . 30)
-                           (w . 6)))
+                           (w . 7)))
 
 (defclass student ()
   ((name :initarg :name
@@ -94,6 +94,11 @@
   "Retrieve start-date and type of pass"
   (values (get-start-date pass) (get-type pass)))
 
+(defun remove-from-today (name)
+  (setf *students-today* (remove-if #'(lambda (student)
+                                        (equalp (name student) name))
+                                    *students-today*)))
+
 ;;;; HTML
 (defun start-server (port)
   (start (make-instance 'hunchentoot:easy-acceptor :port port)))
@@ -104,6 +109,8 @@
      (:html :lang "en"
             (:head
              (:meta :charset "utf-8")
+             (:meta :name "viewport" :content "width=device-width, initial-scale=1") ;mobile friendly
+
              (:title ,title)
              (:link :type "text/css"
                     :rel "stylesheet"
@@ -119,11 +126,32 @@
 (define-easy-handler (main :uri "/main") ()
   (standard-page (:title "Ashtanga Yoga Osaka")
     (:h1 "Students today")
-    (:ol (dolist (student *students-today*)
-           (htm
-            (:li (fmt "Name: ~A" (escape-string (name student)))))))
+    (:table
+     (:caption "Students Today")
+     (:col)
+     (:thead
+      (:tr (:th "Name")
+           (:th "Pass")))
+     (:tbody ;Displays list of students that attended today
+      (dolist (student *students-today*)
+        (htm
+         (:tr
+          (:td (:form (:button :name "name"
+                               :type "submit"
+                               :formmethod "POST"
+                               :formaction "/remove-today"
+                               :value (format nil "~A" (name student))
+                               "X")) ; Button to remove from today's list
+               (fmt "~A" (name student)))
+          (:td (fmt "~A" (get-type (first (pass student))))))))))
     (:a :href "student-list" "Total list of students")
     (:a :href "add-student-to-class" "+ student")))
+
+;; Remove from today's list
+(define-easy-handler (remove-today :uri "/remove-today") (name) 
+  (standard-page (:title "Ashtanga Yoga Osaka")
+    (remove-from-today name)
+    (redirect "/main")))
 
 (define-easy-handler (student-list :uri "/student-list") ()
   (standard-page (:title "Ashtanga Yoga Osaka | Student List")
@@ -136,6 +164,7 @@
                             (first (pass student))))))))
     (:a :href "main" "Back to Main")))
 
+;; Add student to today's list
 (define-easy-handler (add-student-to-class :uri "/add-student-to-class") ()
   (standard-page (:title "Ashtanga Yoga Osaka | Add student to class")
     (:h1 "Add student to class")
@@ -143,6 +172,7 @@
            (:p "Name of the student" (:input :type "text" :name "name" :class "txt"))
            (:p (:input :type "submit" :value "Validate" :class "btn")))))
 
+;; Validate the pass and add the student to today's class
 (define-easy-handler (validate-and-add :uri "/validate-and-add") (name)
   (let ((validate-p (validate-pass (student-from-name name))))
     (with-html-output-to-string
