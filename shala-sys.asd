@@ -10,5 +10,6 @@
                #:cl-mongo
                #:local-time)
   :components ((:file "package")
-               (:file "shala-sys")))
+               (:file "shala-sys")
+               (:file "shala-sys-tests")))
 

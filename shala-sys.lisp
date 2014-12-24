@@ -54,13 +54,20 @@
   "Return a list with the pass information"
   (list :type type :start-date start-date :amt amt))
 
-(defun new-pass (student pass)
-  "Push new pass to student"
+;; (defun new-pass (student pass)
+;;   "Push new pass to student"
+;;   (push pass (pass student)))
+
+(defmethod new-pass (student pass)
   (push pass (pass student)))
 
 (defun pass-of (student)
   "Retrieve latest pass from student"
   (first (pass student)))
+
+(defun pass-p (student)
+  "Test if student has pass, predicate"
+  (not (null (pass student))))
 
 (defun get-start-date (pass)
   "Retrieve the start-date from the pass"
@@ -70,31 +77,32 @@
   "Retrieve type from pass, m - morning, e - evening, w - 1 week"
   (getf pass :type))
 
-(defun validate-pass (student) 
-  "Validate pass according to its type, validity based on *type-map*"
-  (multiple-value-bind (start-date type) (pass-info (first (pass student)))
-    (local-time:timestamp>
-     (cond ((or (equalp type 'm) (equalp type 'e))
-            (local-time:timestamp+ start-date (rest (assoc 'm *type-map*)) :day))
-           (t
-            (local-time:timestamp+ start-date (rest (assoc 'w *type-map*)) :day)))
-     (local-time:now))))
+(defun pass-info (pass)
+  "Retrieve start-date and type of pass"
+  (values (get-start-date pass) (get-type pass)))
 
-(defun pass-p (student)
-  "Test if student has pass, predicate"
-  (not (null (pass student))))
+;; (defun validate-pass (student) 
+;;   "Validate pass according to its type, validity based on *type-map*"
+;;   (multiple-value-bind (start-date type) (pass-info (pass-of student))
+;;     (local-time:timestamp>
+;;      (cond ((or (equalp type 'm) (equalp type 'e))
+;;             (local-time:timestamp+ start-date (rest (assoc 'm *type-map*)) :day))
+;;            (t
+;;             (local-time:timestamp+ start-date (rest (assoc 'w *type-map*)) :day)))
+;;      (local-time:now))))
 
 (defun expired-p (type startdate)
   "checks to see if the pass is expired based on type and startdate, compared with date today, time minimized to 0:00"
   (let ((duration (rest (assoc type *type-map*))))
     (local-time:timestamp< (local-time:adjust-timestamp startdate (offset :day duration))
                            (local-time:timestamp-minimize-part (time-now) :hour))))
-
-(defun pass-info (pass)
-  "Retrieve start-date and type of pass"
-  (values (get-start-date pass) (get-type pass)))
+(defun validate-pass (student) 
+  "Validate pass according to its type, validity based on *type-map*"
+  (multiple-value-bind (start-date type) (pass-info (pass-of student))
+    (not (expired-p type start-date))))
 
 (defun remove-from-today (name)
+  "Remove student from today's list"
   (setf *students-today* (remove-if #'(lambda (student)
                                         (equalp (name student) name))
                                     *students-today*)))
@@ -102,6 +110,11 @@
 ;;;; HTML
 (defun start-server (port)
   (start (make-instance 'hunchentoot:easy-acceptor :port port)))
+
+(defun serve-static-file (fname uri)
+  "Push the filename's URI to the dispatch table"
+  (push (create-static-file-dispatcher-and-handler fname uri)
+        *dispatch-table*))
 
 (defmacro standard-page ((&key title script) &body body)
   `(with-html-output-to-string
@@ -126,7 +139,7 @@
 (define-easy-handler (main :uri "/main") ()
   (standard-page (:title "Ashtanga Yoga Osaka")
     (:h1 "Students today")
-    (:table
+    (:table :id "maintable"
      (:caption "Students Today")
      (:col)
      (:thead
@@ -199,28 +212,3 @@
 
 (defun print-day (timestamp)
   (local-time:format-timestring nil timestamp :format '(:day)))
-
-;;;;; dummy data 
-(defun reset-students ()
-  (setf *students* '())
-  (setf *students-today* '()))
-
-(defun populate-dummy-students ()
-  (progn
-    (register-student (new-student :name "yukako" :email "test@gmail.com"))
-    (register-student (new-student :name "kaori" :email "test2@gmail.com"))
-    (register-student (new-student :name "taeko" :email "test3@gmail.com"))
-    (register-student (new-student :name "taeko fujimoto" :email "test4@gmail.com"))))
-
-(defun populate-dummy-passes ()
-  (progn 
-    (new-pass (student-from-name "yukako") (make-pass :type 'm :start-date (add-months -2 (time-now)))) ;; Has one pass that was bought 2 months ago (1 month type).
-    (new-pass (student-from-name "kaori") (make-pass :type 'w :start-date (add-days -6 (time-now)))) ;; Has one pass that was bought 6 days ago (1 week type).
-    (new-pass (student-from-name "taeko") (make-pass :type 'm :start-date (time-now))) ;; Has one pass that was bought now (1 month type)
-    (new-pass (student-from-name "taeko fujimoto") (make-pass :type 'm :start-date (add-days -45 (time-now)))))) ;; Has one pass that was bought 45 days ago (1 month type)
-
-(defun last-month ()
-  (local-time:adjust-timestamp (time-now) (offset :month -1)))
-
-(defun new-pass-today (type amt)
-  (new-pass :type type :amt amt :start-date (time-now)))
