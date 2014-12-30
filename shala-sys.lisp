@@ -27,8 +27,8 @@
 (defmethod print-object ((object student) stream)
   "Make the student class information readable from the REPL"
   (print-unreadable-object (object stream :type t)
-    (with-slots (name email pass) object
-      (format stream "name: ~s email: ~s pass: ~s" name email pass))))
+    (with-slots (name email pass drop-in) object
+      (format stream "name: ~s email: ~s pass: ~s drop-in :~s" name email pass drop-in))))
 
 (defun new-student (&key name email)
   "Instantiate new student"
@@ -54,12 +54,13 @@
   "Return a list with the pass information"
   (list :type type :start-date start-date :amt amt))
 
-;; (defun new-pass (student pass)
-;;   "Push new pass to student"
-;;   (push pass (pass student)))
-
 (defmethod new-pass (student pass)
+  "Push pass to student's records"
   (push pass (pass student)))
+
+(defmethod new-drop-in (student date amt)
+  "Push drop-in to student's records"
+  (push (list :date date :amt amt) (drop-in student)))
 
 (defun pass-of (student)
   "Retrieve latest pass from student"
@@ -81,16 +82,6 @@
   "Retrieve start-date and type of pass"
   (values (get-start-date pass) (get-type pass)))
 
-;; (defun validate-pass (student) 
-;;   "Validate pass according to its type, validity based on *type-map*"
-;;   (multiple-value-bind (start-date type) (pass-info (pass-of student))
-;;     (local-time:timestamp>
-;;      (cond ((or (equalp type 'm) (equalp type 'e))
-;;             (local-time:timestamp+ start-date (rest (assoc 'm *type-map*)) :day))
-;;            (t
-;;             (local-time:timestamp+ start-date (rest (assoc 'w *type-map*)) :day)))
-;;      (local-time:now))))
-
 (defun expired-p (type startdate)
   "checks to see if the pass is expired based on type and startdate, compared with date today, time minimized to 0:00"
   (let ((duration (rest (assoc type *type-map*))))
@@ -102,6 +93,13 @@
   (when (not (null (pass-p student)))
     (multiple-value-bind (start-date type) (pass-info (pass-of student))
       (not (expired-p type start-date)))))
+
+(defun validate-drop-in (student)
+  "Validate drop-in according to today's date"
+  (when (not (null (drop-in student)))
+    (local-time:timestamp= (local-time:timestamp-minimize-part (time-now) :hour)
+                           (local-time:timestamp-minimize-part (getf (first (drop-in student)) :date)
+                                                               :hour))))
 
 (defun remove-from-today (name)
   "Remove student from today's list"
@@ -158,7 +156,8 @@
                                :value (format nil "~A" (name student))
                                "X")) ; Button to remove from today's list
                (fmt "~A" (name student)))
-          (:td (fmt "~A" (get-type (first (pass student))))))))))
+          (cond ((equal (validate-drop-in student) t) (htm (:td (fmt "Drop-in")))) ; Check if Drop-in or not
+                (t (htm (:td (fmt "~A" (get-type (first (pass student)))))))))))))
     (:a :href "student-list" "Total list of students")
     (:a :href "add-student-to-class" "+ student")))
 
@@ -183,36 +182,59 @@
 (define-easy-handler (add-student-to-class :uri "/add-student-to-class") ()
   (standard-page (:title "Ashtanga Yoga Osaka | Add student to class")
     (:h1 "Add student to class")
-    (:form :action "/validate-and-add" :method "post" :id "validate-student"
-           (:p "Name of the student" (:input :type "text" :name "name" :class "txt"))
-           (:p (:input :type "submit" :value "Validate" :class "btn")))))
+    (:ol (dolist (student *students*)
+           (htm
+            (:li (:a :href (format nil "/validate-and-add?name=~A" (escape-string (name student)))
+                     (fmt "Name:~A" (escape-string (name student))))))))
+    (:a :href "/main" "Return to Main")
+    (:a :href "/add-new-student" "New Student")))
+
+(define-easy-handler (add-new-student :uri "/add-new-student") ()
+  (standard-page (:title "Ashtanga Yoga Osaka | Register New Student")
+    (:h1 "Register New Student")
+    (:form :action "/register-new-student" :method "post" :id "register-student"
+           (:p "Name" (:input :type "text" :name "name" :class "txt"))
+           (:p "Email" (:input :type "email" :name "email" :class "txt"))
+           (:p (:input :type "submit" :value "Register" :class "btn")))))
+
+(define-easy-handler (register-new-student :uri "/register-new-student") (name email)
+  (register-student (new-student :name name :email email))
+  (redirect (format nil "/buy-pass-drop-in?name=~A" name)))
 
 ;; Validate the pass and add the student to today's class
 (define-easy-handler (validate-and-add :uri "/validate-and-add") (name)
   (let* ((student (student-from-name name))
          (validate-p (validate-pass student)))
-    (with-html-output-to-string
-        (*standard-output* nil :prologue t :indent t)
-      (:html
-       (cond ((null (pass-p student)) (redirect (format nil "/buy-pass-drop-in?name=~A" name)))
-             ((equal validate-p t) (progn (push student *students-today*)
-                                          (redirect "/main")))
-             (t (redirect (format nil "/buy-pass-drop-in?name=~A" name)))))))) 
+    (cond ((equal validate-p t) (progn (push student *students-today*)
+                                       (redirect "/main")))
+          ((equal (validate-drop-in student) t) (progn (push student *students-today*)
+                                                       (redirect "/main")))
+          ((null (pass-p student)) (redirect (format nil "/buy-pass-drop-in?name=~A" name)))
+          (t (redirect (format nil "/buy-pass-drop-in?name=~A" name))))))
 
 (define-easy-handler (buy-pass-drop-in :uri "/buy-pass-drop-in") (name)
   (standard-page (:title "Ashtanga Yoga Osaka | Buy Pass or Drop-in")
     (:h1 "Buy pass or drop-in") 
-    (:form :action (format nil "/add-pass-dropin?name=~A" name) :method "post" :id "buy-pass-drop-in"
-           (:p "Morning Pass" (:input :type "checkbox" :name "pass" :value "morning"))
-           (:p "Evening Pass" (:input :type "checkbox" :name "pass" :value "evening"))
-           (:p "Drop-in" (:input :type "checkbox" :name "pass" :value "dropin"))
+    (:form :action (format nil "/add-pass-drop-in?name=~A" name) :method "post" :id "buy-pass-drop-in"
+           (:p "Morning Pass" (:input :type "checkbox" :name "pass" :value 'm))
+           (:p "Evening Pass" (:input :type "checkbox" :name "pass" :value 'e))
+           (:p "1 Week Pass" (:input :type "checkbox" :name "pass" :value 'w))
+           (:p "Drop-in" (:input :type "checkbox" :name "pass" :value 'd))
+           (:p "Amount" (:input :type "number" :name "amt"))
            (:p (:input :type "submit" :value "Buy" :class "btn")))))
 
-(define-easy-handler (add-pass-dropin :uri "/add-pass-dropin") (name pass)
-  (standard-page (:title "Hello")
-    (:p (fmt "~A" (escape-string name)))
-    (:p (fmt "~A" pass))
-    (:p pass)))
+(define-easy-handler (add-pass-dropin :uri "/add-pass-drop-in") (name pass amt)
+  (cond ((equalp pass "M") (new-pass (student-from-name name)
+                                     (make-pass :type 'm :start-date (time-now) :amt (parse-integer amt))))
+        ((equalp pass "E") (new-pass (student-from-name name)
+                                     (make-pass :type 'e :start-date (time-now) :amt (parse-integer amt))))
+        ((equalp pass "W") (new-pass (student-from-name name)
+                                     (make-pass :type 'w :start-date (time-now) :amt (parse-integer amt))))
+        ((equalp pass "D") (new-drop-in (student-from-name name)
+                                        (time-now)
+                                        (parse-integer amt)))
+        (t nil))
+  (redirect "/main"))
 
 ;;;; time component - may change
 (ql:quickload "local-time")
@@ -232,5 +254,6 @@
 (defun print-day (timestamp)
   (local-time:format-timestring nil timestamp :format '(:day)))
 
-
+(defun remove-last-pass (student)
+  (setf (pass student) (rest (pass student))))
 
