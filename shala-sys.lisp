@@ -2,6 +2,10 @@
 
 (in-package #:shala-sys)
 
+
+
+
+
 ;;; "shala-sys" goes here. Hacks and glory await!
 
 (defvar *students* '() "all students past and present")
@@ -132,34 +136,28 @@
                 `(:script :type "text/javascript"
                           (str, script))))
             (:body
-             (:div :id "header" ;page header
-                   )
-             ,@body))))
+             (:div :id "header") ;page header
+             (:div :id "container"
+                   ,@body)))))
 
 (define-easy-handler (main :uri "/main") ()
   (standard-page (:title "Ashtanga Yoga Osaka")
-    (:h1 "Students today")
-    (:table :id "maintable"
+    (:table :class "maintable"
      (:caption "Students Today")
      (:col)
-     (:thead
-      (:tr (:th "Name")
-           (:th "Pass")))
      (:tbody ;Displays list of students that attended today
+      (:tr (:th "Name")
+           (:th "Pass"))
       (dolist (student *students-today*)
         (htm
          (:tr
-          (:td (:form (:button :name "name"
-                               :type "submit"
-                               :formmethod "POST"
-                               :formaction "/remove-today"
-                               :value (format nil "~A" (name student))
-                               "X")) ; Button to remove from today's list
+          (:td (:a :class "btn" :href (format nil "/remove-today?name=~A" (name student)) "X")
                (fmt "~A" (name student)))
           (cond ((equal (validate-drop-in student) t) (htm (:td (fmt "Drop-in")))) ; Check if Drop-in or not
                 (t (htm (:td (fmt "~A" (get-type (first (pass student)))))))))))))
-    (:a :href "student-list" "Total list of students")
-    (:a :href "add-student-to-class" "+ student")))
+    (:div :id "actionlist" 
+          (:a :class "btn" :href "add-student-to-class" "Add Student")
+          (:a :class "btn" :href "student-list" "Student List"))))
 
 ;; Remove from today's list
 (define-easy-handler (remove-today :uri "/remove-today") (name) 
@@ -167,29 +165,59 @@
     (remove-from-today name)
     (redirect "/main")))
 
+;; (define-easy-handler (student-list :uri "/student-list") ()
+;;   (standard-page (:title "Ashtanga Yoga Osaka | Student List")
+;;     (:h1 "Student List")
+;;     (:div :id "student-table"
+;;           (:ol (dolist (student *students*)
+;;                  (htm
+;;                   (:li (fmt "Name: ~A Email: ~A Latest Pass: ~A" (escape-string (name student))
+;;                             (email student)
+;;                             (first (pass student))))))))
+;;     (:a :href "main" "Back to Main")))
+
 (define-easy-handler (student-list :uri "/student-list") ()
   (standard-page (:title "Ashtanga Yoga Osaka | Student List")
-    (:h1 "Student List")
-    (:div :id "student-table"
-          (:ol (dolist (student *students*)
-                 (htm
-                  (:li (fmt "Name: ~A Email: ~A Latest Pass: ~A" (escape-string (name student))
-                            (email student)
-                            (first (pass student))))))))
-    (:a :href "main" "Back to Main")))
+    (:table :class "maintable"
+            (:caption "Student List")
+            (:col)
+            (:tbody
+             (:tr (:th "Name")
+                  (:th "Email")
+                  (:th "Latest Pass"))
+             (dolist (student *students*)
+               (htm
+                (:tr
+                 (:td (fmt "~A" (name student)))
+                 (:td (fmt "~A" (email student)))
+                 (:td (fmt "~A" (first (pass student)))))))))
+    (:div :id "actionlist"
+          (:a :class "btn" :href "main" "Main"))))
 
 ;; Add student to today's list
+;; (define-easy-handler (add-student-to-class :uri "/add-student-to-class") ()
+;;   (standard-page (:title "Ashtanga Yoga Osaka | Add student to class")
+;;     (:h1 "Add student to class")
+;;     (:ol (dolist (student *students*)
+;;            (htm
+;;             (:li (:a :href (format nil "/validate-and-add?name=~A" (escape-string (name student)))
+;;                      (fmt "Name:~A" (escape-string (name student))))))))
+;;     (:a :href "/main" "Return to Main")
+;;     (:a :href "/new-student-f" "New Student")))
+
 (define-easy-handler (add-student-to-class :uri "/add-student-to-class") ()
   (standard-page (:title "Ashtanga Yoga Osaka | Add student to class")
-    (:h1 "Add student to class")
-    (:ol (dolist (student *students*)
-           (htm
-            (:li (:a :href (format nil "/validate-and-add?name=~A" (escape-string (name student)))
-                     (fmt "Name:~A" (escape-string (name student))))))))
-    (:a :href "/main" "Return to Main")
-    (:a :href "/add-new-student" "New Student")))
+    (:div :class "buttonLinkList"
+          (dolist (student *students*)
+            (htm
+             (:a :class "btn" :href (format nil "/validate-and-add?name=~A" (name student))
+                 (fmt "~A" (name student)))
+             (:br))))
+    (:div :id "actionlist"
+          (:a :class "btn" :href "/main" "Main")
+          (:a :class "btn" :href "/new-student-f" "New Student"))))
 
-(define-easy-handler (add-new-student :uri "/add-new-student") ()
+(define-easy-handler (new-student-f :uri "/new-student-f") ()
   (standard-page (:title "Ashtanga Yoga Osaka | Register New Student")
     (:h1 "Register New Student")
     (:form :action "/register-new-student" :method "post" :id "register-student"
@@ -199,7 +227,7 @@
 
 (define-easy-handler (register-new-student :uri "/register-new-student") (name email)
   (register-student (new-student :name name :email email))
-  (redirect (format nil "/buy-pass-drop-in?name=~A" name)))
+  (redirect (format nil "/buy-pass-drop-in-f?name=~A" name)))
 
 ;; Validate the pass and add the student to today's class
 (define-easy-handler (validate-and-add :uri "/validate-and-add") (name)
@@ -209,10 +237,10 @@
                                        (redirect "/main")))
           ((equal (validate-drop-in student) t) (progn (push student *students-today*)
                                                        (redirect "/main")))
-          ((null (pass-p student)) (redirect (format nil "/buy-pass-drop-in?name=~A" name)))
-          (t (redirect (format nil "/buy-pass-drop-in?name=~A" name))))))
+          ((null (pass-p student)) (redirect (format nil "/buy-pass-drop-in-f?name=~A" name)))
+          (t (redirect (format nil "/buy-pass-drop-in-f?name=~A" name))))))
 
-(define-easy-handler (buy-pass-drop-in :uri "/buy-pass-drop-in") (name)
+(define-easy-handler (buy-pass-drop-in-f :uri "/buy-pass-drop-in-f") (name)
   (standard-page (:title "Ashtanga Yoga Osaka | Buy Pass or Drop-in")
     (:h1 "Buy pass or drop-in") 
     (:form :action (format nil "/add-pass-drop-in?name=~A" name) :method "post" :id "buy-pass-drop-in"
@@ -223,7 +251,7 @@
            (:p "Amount" (:input :type "number" :name "amt"))
            (:p (:input :type "submit" :value "Buy" :class "btn")))))
 
-(define-easy-handler (add-pass-dropin :uri "/add-pass-drop-in") (name pass amt)
+(define-easy-handler (add-pass-drop-in :uri "/add-pass-drop-in") (name pass amt)
   (cond ((equalp pass "M") (new-pass (student-from-name name)
                                      (make-pass :type 'm :start-date (time-now) :amt (parse-integer amt))))
         ((equalp pass "E") (new-pass (student-from-name name)
