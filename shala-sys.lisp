@@ -78,6 +78,9 @@
   "Retrieve the start-date from the pass"
   (getf pass :start-date))
 
+(defun print-month-day (timestamp)
+  (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))
+
 (defun get-type (pass)
   "Retrieve type from pass, m - morning, e - evening, w - 1 week"
   (getf pass :type))
@@ -154,7 +157,7 @@
           (:td (:a :class "btn" :href (format nil "/remove-today?name=~A" (name student)) "X")
                (fmt "~A" (name student)))
           (cond ((equal (validate-drop-in student) t) (htm (:td (fmt "Drop-in")))) ; Check if Drop-in or not
-                (t (htm (:td (fmt "~A" (get-type (first (pass student)))))))))))))
+                (t (htm (:td (fmt "~A" (get-type (pass-of student))))))))))))
     (:div :id "actionlist" 
           (:a :class "btn" :href "add-student-to-class" "Add Student")
           (:a :class "btn" :href "student-list" "Student List"))))
@@ -164,17 +167,6 @@
   (standard-page (:title "Ashtanga Yoga Osaka")
     (remove-from-today name)
     (redirect "/main")))
-
-;; (define-easy-handler (student-list :uri "/student-list") ()
-;;   (standard-page (:title "Ashtanga Yoga Osaka | Student List")
-;;     (:h1 "Student List")
-;;     (:div :id "student-table"
-;;           (:ol (dolist (student *students*)
-;;                  (htm
-;;                   (:li (fmt "Name: ~A Email: ~A Latest Pass: ~A" (escape-string (name student))
-;;                             (email student)
-;;                             (first (pass student))))))))
-;;     (:a :href "main" "Back to Main")))
 
 (define-easy-handler (student-list :uri "/student-list") ()
   (standard-page (:title "Ashtanga Yoga Osaka | Student List")
@@ -190,20 +182,11 @@
                 (:tr
                  (:td (fmt "~A" (name student)))
                  (:td (fmt "~A" (email student)))
-                 (:td (fmt "~A" (first (pass student)))))))))
+                 (:td (fmt "~A" (cond ((pass-p student) ; retrieve the latest pass details if existent
+                                       (print-month-day (get-start-date (pass-of student))))
+                                      (t (pass student))))))))))
     (:div :id "actionlist"
           (:a :class "btn" :href "main" "Main"))))
-
-;; Add student to today's list
-;; (define-easy-handler (add-student-to-class :uri "/add-student-to-class") ()
-;;   (standard-page (:title "Ashtanga Yoga Osaka | Add student to class")
-;;     (:h1 "Add student to class")
-;;     (:ol (dolist (student *students*)
-;;            (htm
-;;             (:li (:a :href (format nil "/validate-and-add?name=~A" (escape-string (name student)))
-;;                      (fmt "Name:~A" (escape-string (name student))))))))
-;;     (:a :href "/main" "Return to Main")
-;;     (:a :href "/new-student-f" "New Student")))
 
 (define-easy-handler (add-student-to-class :uri "/add-student-to-class") ()
   (standard-page (:title "Ashtanga Yoga Osaka | Add student to class")

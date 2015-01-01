@@ -1,3 +1,6 @@
+(in-package :shala-sys)
+
+
 (defun reset-students ()
   (setf *students* '())
   (setf *students-today* '()))
