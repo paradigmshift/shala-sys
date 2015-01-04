@@ -11,5 +11,7 @@
                #:local-time)
   :components ((:file "package")
                (:file "shala-sys")
-               (:file "shala-sys-tests")))
+               (:file "shala-sys-tests")
+               (:file "time")
+               (:file "views")))
 
