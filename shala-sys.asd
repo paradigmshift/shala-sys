@@ -13,5 +13,6 @@
                (:file "shala-sys")
                (:file "shala-sys-tests")
                (:file "time")
+               (:file "db-functions")
                (:file "views")))
 

@@ -1,6 +1,7 @@
 (in-package #:shala-sys)
 
 (defmacro lambda-map (list element &body body)
+  "Mapcar to lambda function"
   `(mapcar #'(lambda (,element)
                ,@body)
            ,list))
@@ -8,20 +9,11 @@
 (defun time-now ()
   (local-time:now))
 
-(defun add-months (months timestamp)
-  (local-time:adjust-timestamp timestamp (offset :month months)))
+;; (defun add-months (months timestamp)
+;;   (local-time:adjust-timestamp timestamp (offset :month months)))
 
-(defun add-days (days timestamp)
-  (local-time:adjust-timestamp timestamp (offset :day days)))
-
-(defun print-month (timestamp)
-  (local-time:format-timestring nil timestamp :format '(:short-month)))
-
-(defun print-day (timestamp)
-  (local-time:format-timestring nil timestamp :format '(:day)))
-
-(defun print-month-day (timestamp)
-  (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))
+;; (defun add-days (days timestamp)
+;;   (local-time:adjust-timestamp timestamp (offset :day days)))
 
 (defun local->unix (timestamp)
   (local-time:timestamp-to-unix timestamp))
@@ -63,7 +55,9 @@
 
 (defun convert-drop-in (drop-in-list)
   (lambda-map drop-in-list drop-in (setf (getf drop-in :date)
-                                         (local->unix (getf drop-in :date)))))
+                                         (local->unix (getf drop-in :date)))
+              drop-in))
+
 ;; (defun reconvert-passes (pass-list)
 ;;   (mapcar #'(lambda (pass)
 ;;               (make-pass :type (intern (elt pass 1) :shala-sys)
@@ -80,7 +74,7 @@
 ;; (defun convert-drop-in (drop-in-list)
 ;;   (mapcar #'(lambda (drop-in)
 ;;               (setf (getf drop-in :date)
-;;                     (local->unix (getf drop-in :date)))
+;;                     (local->unix (getf drop-in :date))
 ;;               drop-in)
 ;;           drop-in-list))
 
@@ -89,7 +83,9 @@
 ;;               (make-drop-in :date (unix->local (elt drop-in 1))
 ;;                             :amt (elt drop-in 3)))
 ;;           drop-in-list))
+
 (defun adjust-days (timestamp days)
+  "Add or subract days from the timestamp, returns a new timestamp"
   (local-time:adjust-timestamp timestamp (offset :day days)))
 
 (defun adjust-months (timestamp months)
@@ -104,44 +100,34 @@
   "Extract the month from the timestamp"
   (local-time:timestamp-month timestamp))
 
+(defun get-day (timestamp)
+  "Extract the day from the timestamp"
+  (local-time:timestamp-day timestamp))
+
+(defun month-days-in-pass (pass)
+  (local-time:days-in-month (get-month (get-start-date pass))
+                            (get-year (get-start-date pass))))
+
 (defun get-pass-on (year month pass-list)
   "Returns the pass of the month"
   (first (remove-if-not #'(lambda (pass)
-                                     (equalp (cons (local-time:timestamp-year (get-start-date pass))
-                                                   (local-time:timestamp-month (get-start-date pass)))
-                                             (cons year month)))
-                                 pass-list)))
+                            (equalp (cons (local-time:timestamp-year (get-start-date pass))
+                                          (local-time:timestamp-month (get-start-date pass)))
+                                    (cons year month)))
+                        pass-list)))
 
-(defun prorate-till-month-end (pass)
-  "Calculates the prorated amount of the pass based on purchase date and the number of days in the month. Returns as a second value the difference (carry-over for next month) between the total amount paid and the prorated amount."
-  (let* ((month-days (local-time:days-in-month (local-time:timestamp-month (get-start-date pass))
-                                              (local-time:timestamp-year (get-start-date pass))))
-         (start-day (local-time:timestamp-day (get-start-date pass)))
-         (prorated-amt (* (/ (float (getf pass :amt)) month-days)
-                          (- month-days start-day))))
-    (values prorated-amt
-            (- (getf pass :amt)
-               prorated-amt))))
+(defun get-drop-in-on (year month drop-in-list)
+  (remove-if-not #'(lambda (drop-in)
+                     (equalp (cons (local-time:timestamp-year (getf drop-in :date))
+                                   (local-time:timestamp-month (getf drop-in :date)))
+                             (cons year month)))
+                 drop-in-list))
 
-(defun carry-over+current (pass)
-  "Add the previous month's pass's carry-over to the current month's prorated amount"
-  (let ((prev-month (get-pass-on (get-year (adjust-months (get-start-date pass) -1))
-                                 (get-month (adjust-months (get-start-date pass) -1))))
-        (current-month pass))
-    (if (and prev-month current-month)
-        (+ (prorate-till-month-end current-month)
-           (nth-value 1 (prorate-till-month-end prev-month)))
-        (nth-value 0 (prorate-till-month-end current-month)))))
+(defun print-month (timestamp)
+  (local-time:format-timestring nil timestamp :format '(:short-month)))
 
-(defun total-for (year month)
-  "Retrieve the pass of the year and month given and return the carry-over + prorated amount if applicable, or just the carry-over amount from the previous pass (if existent) if there is no pass for the the given year and month."
-  (let* ((timestamp (local-time:encode-timestamp 1 1 1 1 1 month year))
-         (pass (if (get-pass-on year month)
-                   (get-pass-on year month)
-                   (get-pass-on (get-year (adjust-months timestamp -1))      ;No pass for the given year and month, try extracting the previous month's pass
-                                (get-month (adjust-months timestamp -1))))))
-    (when pass
-      (if (equalp (get-month (get-start-date pass))                          ;Pass for given year and month exists
-                  month)
-          (carry-over+current pass)
-          (nth-value 1 (prorate-till-month-end pass)))))) 
+(defun print-day (timestamp)
+  (local-time:format-timestring nil timestamp :format '(:day)))
+
+(defun print-month-day (timestamp)
+  (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))
