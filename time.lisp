@@ -9,12 +9,6 @@
 (defun time-now ()
   (local-time:now))
 
-;; (defun add-months (months timestamp)
-;;   (local-time:adjust-timestamp timestamp (offset :month months)))
-
-;; (defun add-days (days timestamp)
-;;   (local-time:adjust-timestamp timestamp (offset :day days)))
-
 (defun local->unix (timestamp)
   (local-time:timestamp-to-unix timestamp))
 
@@ -45,44 +39,18 @@
 
 (defun reconvert-passes (pass-list)
   (lambda-map pass-list pass (make-pass :type (intern (elt pass 1) :shala-sys)
-                                        :start-date (unix->local (elt pass 3))
+                                        :date (unix->local (elt pass 3))
                                         :amt (elt pass 5))))
 
 (defun convert-passes (pass-list)
-  (lambda-map pass-list pass (setf (getf pass :start-date)
-                                   (local->unix (getf pass :start-date)))
+  (lambda-map pass-list pass (setf (getf pass :date)
+                                   (local->unix (getf pass :date)))
               pass))
 
 (defun convert-drop-in (drop-in-list)
   (lambda-map drop-in-list drop-in (setf (getf drop-in :date)
                                          (local->unix (getf drop-in :date)))
               drop-in))
-
-;; (defun reconvert-passes (pass-list)
-;;   (mapcar #'(lambda (pass)
-;;               (make-pass :type (intern (elt pass 1) :shala-sys)
-;;                          :start-date (unix->local (elt pass 3))
-;;                          :amt (elt pass 5))) pass-list))
-
-;; (defun convert-passes (pass-list)
-;;   (mapcar #'(lambda (pass)
-;;               (setf (getf pass :start-date)
-;;                     (local->unix (getf pass :start-date)))
-;;               pass)
-;;           pass-list))
-
-;; (defun convert-drop-in (drop-in-list)
-;;   (mapcar #'(lambda (drop-in)
-;;               (setf (getf drop-in :date)
-;;                     (local->unix (getf drop-in :date))
-;;               drop-in)
-;;           drop-in-list))
-
-;; (defun reconvert-drop-in (drop-in-list)
-;;   (mapcar #'(lambda (drop-in)
-;;               (make-drop-in :date (unix->local (elt drop-in 1))
-;;                             :amt (elt drop-in 3)))
-;;           drop-in-list))
 
 (defun adjust-days (timestamp days)
   "Add or subract days from the timestamp, returns a new timestamp"
@@ -105,21 +73,21 @@
   (local-time:timestamp-day timestamp))
 
 (defun month-days-in-pass (pass)
-  (local-time:days-in-month (get-month (get-start-date pass))
-                            (get-year (get-start-date pass))))
+  (local-time:days-in-month (get-month (get-record-date pass))
+                            (get-year (get-record-date pass))))
 
 (defun get-pass-on (year month pass-list)
   "Returns the pass of the month"
   (first (remove-if-not #'(lambda (pass)
-                            (equalp (cons (local-time:timestamp-year (get-start-date pass))
-                                          (local-time:timestamp-month (get-start-date pass)))
+                            (equalp (cons (local-time:timestamp-year (get-record-date pass))
+                                          (local-time:timestamp-month (get-record-date pass)))
                                     (cons year month)))
                         pass-list)))
 
 (defun get-drop-in-on (year month drop-in-list)
   (remove-if-not #'(lambda (drop-in)
-                     (equalp (cons (local-time:timestamp-year (getf drop-in :date))
-                                   (local-time:timestamp-month (getf drop-in :date)))
+                     (equalp (cons (local-time:timestamp-year (get-record-date drop-in))
+                                   (local-time:timestamp-month (get-record-date drop-in)))
                              (cons year month)))
                  drop-in-list))
 

@@ -108,6 +108,10 @@ body {
 
 .maintable .btn {
     float: left;
+    /* make buttons circles */
+    -webkit-border-radius: 50;
+    -moz-border-radius: 50;
+    border-radius: 50px;
 }
 
 .maintable {

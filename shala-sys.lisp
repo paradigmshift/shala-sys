@@ -5,9 +5,6 @@
 
 
 ;;; "shala-sys" goes here. Hacks and glory await!
-
-;; (defvar *students* '() "all students past and present")
-
 (defvar *students-today* '() "students present today")
 
 (defparameter *type-map* '((M . 30)
@@ -39,9 +36,9 @@
   "Instantiate new student"
   (make-instance 'student :name name :email email))
 
-(defun make-pass (&key type start-date amt)
+(defun make-pass (&key type date amt)
   "Return a list with the pass information"
-  (list :type type :start-date start-date :amt amt))
+  (list :type type :date date :amt amt))
 
 (defun make-drop-in (&key date amt)
   (list :date date :amt amt))
@@ -54,9 +51,9 @@
   "Test if student has pass, predicate"
   (not (null (pass student))))
 
-(defun get-start-date (pass)
+(defun get-record-date (record)
   "Retrieve the start-date from the pass"
-  (getf pass :start-date))
+  (getf record :date))
 
 (defun get-type (pass)
   "Retrieve type from pass, m - morning, e - evening, w - 1 week"
@@ -71,7 +68,7 @@
 
 (defun pass-info (pass)
   "Retrieve start-date and type of pass"
-  (values (get-start-date pass) (get-type pass)))
+  (values (get-record-date pass) (get-type pass)))
 
 (defun remove-from-today (name)
   "Remove student from today's list"
@@ -83,11 +80,11 @@
   "Calculates the prorated amount of the pass based on purchase date and the number
    of days in the month. Returns as a second value the difference (carry-over for next month)
    between the total amount paid and the prorated amount."
-  (let* ((month-days ;; (local-time:days-in-month (local-time:timestamp-month (get-start-date pass))
-                     ;;                          (local-time:timestamp-year (get-start-date pass)))
+  (let* ((month-days ;; (local-time:days-in-month (local-time:timestamp-month (get-record-date pass))
+                     ;;                          (local-time:timestamp-year (get-record-date pass)))
           (month-days-in-pass pass))
-         (start-day ;; (local-time:timestamp-day (get-start-date pass))
-           (get-day (get-start-date pass)))
+         (start-day ;; (local-time:timestamp-day (get-record-date pass))
+           (get-day (get-record-date pass)))
          ;;Monthly passes are prorated by dividing by days of the month, weekly passes by 7 days
          (divisor (if (equalp (getf pass :type) 'w)
                       7
@@ -122,12 +119,12 @@
                                 (get-month (adjust-months timestamp -1))
                                 (pass student)))))
     (when pass
-      (if (equalp (get-month (get-start-date pass))                          ;Pass for given year and
+      (if (equalp (get-month (get-record-date pass))                          ;Pass for given year and
                                                                              ; month exists
                   month)
           (carry-over+current pass
-                              (get-pass-on (get-year (adjust-months (get-start-date pass) -1))
-                                           (get-month (adjust-months (get-start-date pass) -1))
+                              (get-pass-on (get-year (adjust-months (get-record-date pass) -1))
+                                           (get-month (adjust-months (get-record-date pass) -1))
                                            (pass student)))
           ;; Pass for given month doesn't exist, defaulting to carry-over from last month
           (nth-value 1 (prorate-till-month-end pass))))))  

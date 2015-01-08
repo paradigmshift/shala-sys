@@ -74,7 +74,7 @@
                  (:td (fmt "~A" (name student)))
                  (:td (fmt "~A" (email student)))
                  (:td (fmt "~A" (cond ((pass-p student) ; retrieve the latest pass details if existent
-                                       (print-month-day (get-start-date (pass-of student))))
+                                       (print-month-day (get-record-date (pass-of student))))
                                       (t (pass student))))))))))
     (:div :id "actionlist"
           (:a :class "btn" :href "main" "Main"))))
@@ -128,15 +128,15 @@
 (define-easy-handler (add-pass-drop-in :uri "/add-pass-drop-in") (name pass amt)
   (cond ((equalp pass "M") (new-pass (student-from-name name)
                                      (make-pass :type 'M
-                                                :start-date (time-now)
+                                                :date (time-now)
                                                 :amt (parse-integer amt))))
         ((equalp pass "E") (new-pass (student-from-name name)
                                      (make-pass :type 'E
-                                                :start-date (time-now)
+                                                :date (time-now)
                                                 :amt (parse-integer amt))))
         ((equalp pass "W") (new-pass (student-from-name name)
                                      (make-pass :type 'W
-                                                :start-date (time-now)
+                                                :date (time-now)
                                                 :amt (parse-integer amt))))
         ((equalp pass "D") (new-drop-in (student-from-name name)
                                         (make-drop-in :date (time-now)
