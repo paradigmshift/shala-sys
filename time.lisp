@@ -76,21 +76,6 @@
   (local-time:days-in-month (get-month (get-record-date pass))
                             (get-year (get-record-date pass))))
 
-;; (defun get-pass-on (year month pass-list)
-;;   "Returns the pass of the month"
-;;   (first (remove-if-not #'(lambda (pass)
-;;                             (equalp (cons (local-time:timestamp-year (get-record-date pass))
-;;                                           (local-time:timestamp-month (get-record-date pass)))
-;;                                     (cons year month)))
-;;                         pass-list)))
-
-;; (defun get-drop-in-on (year month drop-in-list)
-;;   (remove-if-not #'(lambda (drop-in)
-;;                      (equalp (cons (local-time:timestamp-year (get-record-date drop-in))
-;;                                    (local-time:timestamp-month (get-record-date drop-in)))
-;;                              (cons year month)))
-;;                  drop-in-list))
-
 ;; (defun print-month (timestamp)
 ;;   (local-time:format-timestring nil timestamp :format '(:short-month)))
 
@@ -100,22 +85,36 @@
 ;; (defun print-month-day (timestamp)
 ;;   (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))
 
-(defun filter-by (&key year month)
-  (lambda (list)
-    (remove-if-not #'(lambda (element)
-                       (when year
-                         (equalp (local-time:timestamp-year (get-record-date element))
-                                 year))
-                       (when month
-                         (equalp (local-time:timestamp-month (get-record-date element))
-                                 month)))
-                   list)))
+;; (defun filter-by (&key year month type)
+;;   "Remove members of the list not matching the given year and/or month and/or type, returns a
+;;    function that takes the list"
+;;   (lambda (lst)
+;;     (remove-if-not #'(lambda (element)
+;;                             (when year
+;;                               (format t "~A" (equalp (local-time:timestamp-year (get-record-date element))
+;;                                                      year)))
+;;                             (when month
+;;                               (format t "~A" (equalp (local-time:timestamp-month (get-record-date element))
+;;                                                      month)))
+;;                             (when type
+;;                               (format t "~A" (equalp (get-type element)
+;;                                                      type))))
+;;                         lst)))
 
-(defun filter-by-year-month (year month)
-  (filter-by :year year :month month))
+;; (defun filter-by-year-month (year month)
+;;   (filter-by :year year :month month))
 
-(defun get-drop-in-on (year month drop-in-list)
-  (funcall (filter-by-year-month year month) drop-in-list))
+;; (defun filter-by-year-month-type (year month type)
+;;   (filter-by :year year :month month :type type))
 
-(defun get-pass-on (year month pass-list)
-  (first (funcall (filter-by-year-month year month) pass-list)))
+;; (defun get-drop-in-on (year month drop-in-list)
+;;   "Retrieve drop-in for given year and month from a list of drop-ins"
+;;   (funcall (filter-by-year-month year month) drop-in-list))
+
+;; (defun get-pass-on (year month pass-list)
+;;   "Retrieve pass for given year and month from a list of passes"
+;;   (first (funcall (filter-by-year-month year month) pass-list)))
+
+;; (defun get-morning-passes-on (year month pass-list)
+;;   "Retrieve all 'm (morning) type passes for given year and month from a list of passes"
+;;   (funcall (filter-by-year-month-type year month 'm) pass-list))
