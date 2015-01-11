@@ -85,36 +85,3 @@
 ;; (defun print-month-day (timestamp)
 ;;   (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))
 
-;; (defun filter-by (&key year month type)
-;;   "Remove members of the list not matching the given year and/or month and/or type, returns a
-;;    function that takes the list"
-;;   (lambda (lst)
-;;     (remove-if-not #'(lambda (element)
-;;                             (when year
-;;                               (format t "~A" (equalp (local-time:timestamp-year (get-record-date element))
-;;                                                      year)))
-;;                             (when month
-;;                               (format t "~A" (equalp (local-time:timestamp-month (get-record-date element))
-;;                                                      month)))
-;;                             (when type
-;;                               (format t "~A" (equalp (get-type element)
-;;                                                      type))))
-;;                         lst)))
-
-;; (defun filter-by-year-month (year month)
-;;   (filter-by :year year :month month))
-
-;; (defun filter-by-year-month-type (year month type)
-;;   (filter-by :year year :month month :type type))
-
-;; (defun get-drop-in-on (year month drop-in-list)
-;;   "Retrieve drop-in for given year and month from a list of drop-ins"
-;;   (funcall (filter-by-year-month year month) drop-in-list))
-
-;; (defun get-pass-on (year month pass-list)
-;;   "Retrieve pass for given year and month from a list of passes"
-;;   (first (funcall (filter-by-year-month year month) pass-list)))
-
-;; (defun get-morning-passes-on (year month pass-list)
-;;   "Retrieve all 'm (morning) type passes for given year and month from a list of passes"
-;;   (funcall (filter-by-year-month-type year month 'm) pass-list))
