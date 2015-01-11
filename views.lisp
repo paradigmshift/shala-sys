@@ -14,6 +14,8 @@
   (serve-static-file "/21.jpg" "/home/mo/dev/lisp/shala-sys/21.jpg"))
 
 ;;;;HTML Views
+
+;;; Standard Page template
 (defmacro standard-page ((&key title script) &body body)
   `(with-html-output-to-string
        (*standard-output* nil :prologue t :indent t)
@@ -34,6 +36,7 @@
              (:div :id "container"
                    ,@body)))))
 
+;;; Main page displaying students that attended class on that day
 (define-easy-handler (main :uri "/main") ()
   (standard-page (:title "Ashtanga Yoga Osaka")
     (:table :class "maintable"
@@ -42,7 +45,7 @@
      (:tbody ;Displays list of students that attended today
       (:tr (:th "Name")
            (:th "Pass"))
-      (dolist (student *students-today*)
+      (dolist (student (reverse *students-today*)) ;Shows the students in the order they signed in
         (htm
          (:tr
           (:td (:a :class "btn" :href (format nil "/remove-today?name=~A" (name student)) "X")
@@ -51,7 +54,8 @@
                 (t (htm (:td (fmt "~A" (get-type (pass-of student))))))))))))
     (:div :id "actionlist" 
           (:a :class "btn" :href "add-student-to-class" "Add Student")
-          (:a :class "btn" :href "student-list" "Student List"))))
+          (:a :class "btn" :href "student-list" "Student List")
+          (:a :class "btn" :href "reports" "Reports"))))
 
 ;; Remove from today's list
 (define-easy-handler (remove-today :uri "/remove-today") (name) 

@@ -76,12 +76,11 @@
   (local-time:days-in-month (get-month (get-record-date pass))
                             (get-year (get-record-date pass))))
 
-;; (defun print-month (timestamp)
-;;   (local-time:format-timestring nil timestamp :format '(:short-month)))
+(defun print-month (timestamp)
+  (local-time:format-timestring nil timestamp :format '(:short-month)))
 
-;; (defun print-day (timestamp)
-;;   (local-time:format-timestring nil timestamp :format '(:day)))
+(defun print-day (timestamp)
+  (local-time:format-timestring nil timestamp :format '(:day)))
 
-;; (defun print-month-day (timestamp)
-;;   (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))
-
+(defun print-month-day (timestamp)
+  (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))

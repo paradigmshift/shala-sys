@@ -42,9 +42,10 @@
   (setf (pass student) (rest (pass student))))
 
 (defun students ()
+  "Retrieves the list of students from the DB, sorted"
   (map 'list #'(lambda (doc)
                  (doc->student doc))
-       (docs (iter (db.find *student-list* :all)))))
+       (docs (iter (db.sort *student-list* :all :field "name")))))
 
 (defun student-from-name (name)
   (let ((found-students (docs (db.find *student-list* ($ "name" name)))))
