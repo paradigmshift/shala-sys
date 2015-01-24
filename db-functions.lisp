@@ -1,5 +1,7 @@
 (in-package :shala-sys)
 
+;;;; Functions responsible for writing, reading, and other DB-related procedures are defined here.
+
 (cl-mongo:db.use "shala-sys")
 
 (defparameter *student-list* "students")

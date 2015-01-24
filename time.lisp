@@ -1,19 +1,6 @@
 (in-package #:shala-sys)
 
-(defmacro lambda-map (list element &body body)
-  "Mapcar to lambda function"
-  `(mapcar #'(lambda (,element)
-               ,@body)
-           ,list))
-
-(defun time-now ()
-  (local-time:now))
-
-(defun local->unix (timestamp)
-  (local-time:timestamp-to-unix timestamp))
-
-(defun unix->local (timestamp)
-  (local-time:unix-to-timestamp timestamp))
+;;;; Functions dealing with calls to the local-time API, and other time-related functions, are defined here.
 
 (defun expired-p (type startdate)
   "checks to see if the pass is expired based on type and startdate, compared with date today, time minimized to 0:00"
@@ -33,6 +20,24 @@
     (local-time:timestamp= (local-time:timestamp-minimize-part (time-now) :hour)
                            (local-time:timestamp-minimize-part (getf (first (drop-in student)) :date)
                                                                :hour))))
+
+(defun adjust-days (timestamp days)
+  "Add or subract days from the timestamp, returns a new timestamp"
+  (local-time:adjust-timestamp timestamp (offset :day days)))
+
+(defun adjust-months (timestamp months)
+  "Add or subtract months from the timestamp, returns a new timestamp"
+  (local-time:adjust-timestamp timestamp (offset :month months)))
+
+(defun time-now ()
+  (local-time:now))
+
+(defun local->unix (timestamp)
+  (local-time:timestamp-to-unix timestamp))
+
+(defun unix->local (timestamp)
+  (local-time:unix-to-timestamp timestamp))
+
 (defun reconvert-drop-in (drop-in-list)
   (lambda-map drop-in-list drop-in (make-drop-in :date (unix->local (elt drop-in 1))
                                                  :amt (elt drop-in 3))))
@@ -51,14 +56,6 @@
   (lambda-map drop-in-list drop-in (setf (getf drop-in :date)
                                          (local->unix (getf drop-in :date)))
               drop-in))
-
-(defun adjust-days (timestamp days)
-  "Add or subract days from the timestamp, returns a new timestamp"
-  (local-time:adjust-timestamp timestamp (offset :day days)))
-
-(defun adjust-months (timestamp months)
-  "Add or subtract months from the timestamp, returns a new timestamp"
-  (local-time:adjust-timestamp timestamp (offset :month months)))
 
 (defun get-year (timestamp)
   "Extract the year from the timestamp"
@@ -84,3 +81,9 @@
 
 (defun print-month-day (timestamp)
   (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))
+
+(defmacro lambda-map (list element &body body)
+  "Mapcar to lambda function"
+  `(mapcar #'(lambda (,element)
+               ,@body)
+           ,list))

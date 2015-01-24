@@ -43,21 +43,9 @@
 (defun make-drop-in (&key date amt)
   (list :date date :amt amt))
 
-(defun pass-of (student)
-  "Retrieve latest pass from student"
-  (first (pass student)))
-
 (defun pass-p (student)
   "Test if student has pass, predicate"
   (not (null (pass student))))
-
-(defun get-record-date (record)
-  "Retrieve the start-date from the pass"
-  (getf record :date))
-
-(defun get-type (pass)
-  "Retrieve type from pass, m - morning, e - evening, w - 1 week"
-  (getf pass :type))
 
 (defun remove-nil (list)
   "Remove nil elements from list"
@@ -65,10 +53,6 @@
 
 (defun sum (list)
   (reduce #'+ list))
-
-(defun pass-info (pass)
-  "Retrieve start-date and type of pass"
-  (values (get-record-date pass) (get-type pass)))
 
 (defun remove-from-today (name)
   "Remove student from today's list"
