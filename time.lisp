@@ -1,6 +1,11 @@
 (in-package #:shala-sys)
 
 ;;;; Functions dealing with calls to the local-time API, and other time-related functions, are defined here.
+(defmacro lambda-map (list element &body body)
+  "Mapcar to lambda function"
+  `(mapcar #'(lambda (,element)
+               ,@body)
+           ,list))
 
 (defun expired-p (type startdate)
   "checks to see if the pass is expired based on type and startdate, compared with date today, time minimized to 0:00"
@@ -81,9 +86,3 @@
 
 (defun print-month-day (timestamp)
   (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))
-
-(defmacro lambda-map (list element &body body)
-  "Mapcar to lambda function"
-  `(mapcar #'(lambda (,element)
-               ,@body)
-           ,list))
