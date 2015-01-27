@@ -13,7 +13,20 @@
   (serve-static-file "/style.css" "/home/mo/dev/lisp/shala-sys/style.css")
   (serve-static-file "/21.jpg" "/home/mo/dev/lisp/shala-sys/21.jpg"))
 
-;;;;HTML Views
+;;;  Parenscript macro for showModal() and close() methods for pop-up dialogs.
+;;;Takes the dialog's id, button for opening the dialog's id, and closing button's id.
+(defpsmacro open-close-modal-dialog (dialog-id element-id-1 element-id-2)
+  (let ((dialog (ps-gensym)))
+    `(progn
+       (setf ,dialog (chain document (get-element-by-id ,dialog-id)))
+       (setf (chain document (get-element-by-id ,element-id-1) onclick)
+             (lambda ()
+               (funcall (chain ,dialog show-modal))))
+       (setf (chain document (get-element-by-id ,element-id-2) onclick)
+             (lambda ()
+               (funcall (chain ,dialog close)))))))
+
+;;;HTML Views
 
 ;;; Standard Page template
 (defmacro standard-page ((&key title script) &body body)
@@ -38,7 +51,14 @@
 
 ;;; Main page displaying students that attended class on that day
 (define-easy-handler (main :uri "/main") ()
-  (standard-page (:title "Ashtanga Yoga Osaka")
+  (standard-page (:title "Ashtanga Yoga Osaka"
+                         ;; Shows the pop-up dialog with the list of students
+                         :script (ps
+                                   (defun init ()
+                                     (open-close-modal-dialog "addStudentDialog" "addStudent" "closeList")
+                                     (open-close-modal-dialog "newStudentDialog" "newStudent" "closeNewStudent"))
+                                   (setf (chain window onload) init)))
+    
     (:table :class "maintable"
      (:caption "Students Today")
      (:col)
@@ -52,8 +72,29 @@
                (fmt "~A" (name student)))
           (cond ((equal (validate-drop-in student) t) (htm (:td (fmt "Drop-in")))) ; Check if Drop-in or not
                 (t (htm (:td (fmt "~A" (get-type (pass-of student))))))))))))
-    (:div :id "actionlist" 
-          (:a :class "btn" :href "add-student-to-class" "Add Student")
+
+    ;; Pop-up dialog with list of students to choose from
+    (:dialog :id "addStudentDialog"
+             (:div :class "buttonLinkList"
+                   (dolist (student (students))
+                     (htm
+                      (:a :class "btn" :href (format nil "/validate-and-add?name=~A" (name student))
+                          (fmt "~A" (name student)))
+                      (:br))))
+             (:a :href "#" :id "newStudent" :class "btn" "New Student")
+             (:a :href "#" :id "closeList" :class "btn" "Exit"))
+
+    ;; Pop-up dialog for registering new students
+    (:dialog :id "newStudentDialog"
+             (:h1 "Register New Student")
+             (:form :action "/register-new-student" :method "post" :id "register-student"
+                    (:p "Name" (:input :type "text" :name "name" :class "txt"))
+                    (:p "Email" (:input :type "email" :name "email" :class "txt"))
+                    (:p (:input :type "submit" :value "Register" :class "btn")
+                        (:a :class "btn" :href "#" :id "closeNewStudent" "Cancel"))))
+
+    (:div :id "actionlist"
+          (:button :id "addStudent" :class "btn" "Add Student")
           (:a :class "btn" :href "student-list" "Student List")
           (:a :class "btn" :href "reports" "Reports"))))
 
@@ -95,13 +136,13 @@
           (:a :class "btn" :href "/main" "Main")
           (:a :class "btn" :href "/new-student-f" "New Student"))))
 
-(define-easy-handler (new-student-f :uri "/new-student-f") ()
-  (standard-page (:title "Ashtanga Yoga Osaka | Register New Student")
-    (:h1 "Register New Student")
-    (:form :action "/register-new-student" :method "post" :id "register-student"
-           (:p "Name" (:input :type "text" :name "name" :class "txt"))
-           (:p "Email" (:input :type "email" :name "email" :class "txt"))
-           (:p (:input :type "submit" :value "Register" :class "btn")))))
+;; (define-easy-handler (new-student-f :uri "/new-student-f") ()
+;;   (standard-page (:title "Ashtanga Yoga Osaka | Register New Student")
+;;     (:h1 "Register New Student")
+;;     (:form :action "/register-new-student" :method "post" :id "register-student"
+;;            (:p "Name" (:input :type "text" :name "name" :class "txt"))
+;;            (:p "Email" (:input :type "email" :name "email" :class "txt"))
+;;            (:p (:input :type "submit" :value "Register" :class "btn")))))
 
 (define-easy-handler (register-new-student :uri "/register-new-student") (name email)
   (register-student (new-student :name name :email email))
