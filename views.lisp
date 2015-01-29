@@ -78,11 +78,11 @@
              (:div :class "buttonLinkList"
                    (dolist (student (students))
                      (htm
-                      (:a :class "btn" :href (format nil "/validate-and-add?name=~A" (name student))
+                      (:a :class "modalList" :href (format nil "/validate-and-add?name=~A" (name student))
                           (fmt "~A" (name student)))
                       (:br))))
-             (:a :href "#" :id "newStudent" :class "btn" "New Student")
-             (:a :href "#" :id "closeList" :class "btn" "Exit"))
+             (:p (:a :href "#" :id "newStudent" :class "btn" "New Student")
+                 (:a :href "#" :id "closeList" :class "btn" "Exit")))
 
     ;; Pop-up dialog for registering new students
     (:dialog :id "newStudentDialog"
@@ -94,7 +94,7 @@
                         (:a :class "btn" :href "#" :id "closeNewStudent" "Cancel"))))
 
     (:div :id "actionlist"
-          (:button :id "addStudent" :class "btn" "Add Student")
+          (:a :class "btn" :href "#" :id "addStudent"  "Add Student")
           (:a :class "btn" :href "student-list" "Student List")
           (:a :class "btn" :href "reports" "Reports"))))
 
@@ -116,7 +116,7 @@
              (dolist (student (students))
                (htm
                 (:tr
-                 (:td (fmt "~A" (name student)))
+                 (:td (:a :href "#" :class "listLink" (fmt "~A" (name student)))) 
                  (:td (fmt "~A" (email student)))
                  (:td (fmt "~A" (cond ((pass-p student) ; retrieve the latest pass details if existent
                                        (print-month-day (get-record-date (pass-of student))))

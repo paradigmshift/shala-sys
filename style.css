@@ -56,6 +56,20 @@ body {
     margin-right:auto;
 }
 
+dialog {
+    width: 200px;
+    border-radius: 15px;
+}
+
+dialog::backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottome: 0;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
 .container {
     width:90%;
     margin-left:auto;
@@ -108,10 +122,77 @@ body {
 
 .maintable .btn {
     float: left;
-    /* make buttons circles */
-    -webkit-border-radius: 50;
-    -moz-border-radius: 50;
-    border-radius: 50px;
+    -webkit-border-radius: 10;
+    -moz-border-radius: 10;
+    background-image: -webkit-gradient(
+	                          linear,
+	                          left top,
+	                          left bottom,
+	                          color-stop(0, #F06060),
+	                          color-stop(1, #B50909)
+                          );
+    background-image: -o-linear-gradient(bottom, #F06060 0%, #B50909 100%);
+    background-image: -moz-linear-gradient(bottom, #F06060 0%, #B50909 100%);
+    background-image: -webkit-linear-gradient(bottom, #F06060 0%, #B50909 100%);
+    background-image: -ms-linear-gradient(bottom, #F06060 0%, #B50909 100%);
+    background-image: linear-gradient(to bottom, #F06060 0%, #B50909 100%);
+    border-radius: 10px;
+    transition: all .2s ease-in-out;
+    opacity: 1;
+}
+
+.maintable .btn:hover {
+    background-image: -webkit-gradient(
+	                          linear,
+	                          left top,
+	                          left bottom,
+	                          color-stop(0, #5E0606),
+	                          color-stop(1, #9E0505)
+                          );
+    background-image: -o-linear-gradient(bottom, #5E0606 0%, #9E0505 100%);
+    background-image: -moz-linear-gradient(bottom, #5E0606 0%, #9E0505 100%);
+    background-image: -webkit-linear-gradient(bottom, #5E0606 0%, #9E0505 100%);
+    background-image: -ms-linear-gradient(bottom, #5E0606 0%, #9E0505 100%);
+    background-image: linear-gradient(to bottom, #5E0606 0%, #9E0505 100%);
+    opacity: 0.5;
+}
+
+.listLink {
+    text-decoration: none;
+    color: #3491d9;
+    font-weight: bold;
+    transition: all .2s ease-in-out;
+    display: block;
+}
+
+a.listLink:hover {
+    color: white;
+    background-color: #3491d9;
+}
+
+.modalList {
+    display: block;
+    border-width: 0 1px 0 1px;
+    border-style: solid;
+    -webkit-border-image: -webkit-gradient(linear, 0 100%, 0 0, from(black), to(rgba(0, 0, 0, 0))) 1 100%;
+    -webkit-border-image: -webkit-linear-gradient(bottom, black, rgba(0, 0, 0, 0)) 1 100%;
+    -moz-border-image: -moz-linear-gradient(bottom, black, rgba(0, 0, 0, 0)) 1 100%;
+    -o-border-image: -o-linear-gradient(bottom, black, rgba(0, 0, 0, 0)) 1 100%;
+    border-image: linear-gradient(to top, black, rgba(0, 0, 0, 0)) 1 100%;
+}
+
+a.modalList {
+    text-decoration: none;
+    text-align: center;
+    transition: all .2s ease-in-out;
+    color: #3491d9;
+    text-weight: bold;
+}
+
+a.modalList:hover {
+    color: white;
+    background-color: black;
+    transform: scale(1.1);
 }
 
 .maintable {
@@ -226,7 +307,6 @@ body {
 	background:-o-linear-gradient(bottom, #3cb0fd 5%, #3498db 100%);	background:-webkit-gradient( linear, left top, left bottom, color-stop(0.05, #3cb0fd), color-stop(1, #3498db) );
 	background:-moz-linear-gradient( center top, #3cb0fd 5%, #3498db 100% );
 	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr="#3cb0fd", endColorstr="#3498db");	background: -o-linear-gradient(top,#3cb0fd,3498db);
-
 	background-color:#3cb0fd;
 }
 
