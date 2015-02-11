@@ -8,7 +8,9 @@
   :depends-on (#:parenscript
                #:hunchentoot
                #:cl-mongo
-               #:local-time)
+               #:local-time
+               #:cl-json
+               #:split-sequence)
   :components ((:file "package")
                (:file "shala-sys")
                (:file "shala-sys-tests")

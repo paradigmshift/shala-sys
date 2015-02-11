@@ -1,4 +1,4 @@
-(in-package :shala-sys)
+(in-package #:shala-sys)
 
 (defun start-server (port)
   (start (make-instance 'hunchentoot:easy-acceptor :port port)))
@@ -15,16 +15,26 @@
 
 ;;;  Parenscript macro for showModal() and close() methods for pop-up dialogs.
 ;;;Takes the dialog's id, button for opening the dialog's id, and closing button's id.
-(defpsmacro open-close-modal-dialog (dialog-id element-id-1 element-id-2)
-  (let ((dialog (ps-gensym)))
-    `(progn
-       (setf ,dialog (chain document (get-element-by-id ,dialog-id)))
-       (setf (chain document (get-element-by-id ,element-id-1) onclick)
-             (lambda ()
-               (funcall (chain ,dialog show-modal))))
-       (setf (chain document (get-element-by-id ,element-id-2) onclick)
-             (lambda ()
-               (funcall (chain ,dialog close)))))))
+(ps (defmacro open-close-modal-dialog (dialog-id element-id-1 element-id-2 &key open close open-args close-args)
+      (let ((dialog (ps-gensym)))
+        `(progn
+           (setf ,dialog (chain document (get-element-by-id ,dialog-id)))
+           (setf (chain document (get-element-by-id ,element-id-1) onclick)
+                 (lambda (,@open-args)
+                   (progn
+                     ,@open
+                     (funcall (chain ,dialog show-modal)))))
+           (setf (chain document (get-element-by-id ,element-id-2) onclick)
+                 (lambda (,@close-args)
+                   (progn
+                     ,@close
+                     (funcall (chain ,dialog close)))))))))
+
+;;; Converts lisp property-list to JSON
+(defun pass->json (pass)
+  (let ((new-pass (copy-list pass)))
+    (setf (getf new-pass :date) (print-year-month-day (getf new-pass :date)))
+    (cl-json:encode-json-plist-to-string new-pass)))
 
 ;;;HTML Views
 
@@ -36,7 +46,6 @@
             (:head
              (:meta :charset "utf-8")
              (:meta :name "viewport" :content "width=device-width, initial-scale=1") ;mobile friendly
-
              (:title ,title)
              (:link :type "text/css"
                     :rel "stylesheet"
@@ -68,7 +77,7 @@
       (dolist (student (reverse *students-today*)) ;Shows the students in the order they signed in
         (htm
          (:tr
-          (:td (:a :class "btn" :href (format nil "/remove-today?name=~A" (name student)) "X")
+          (:td (:a :class "cancelButton" :href (format nil "/remove-today?name=~A" (name student)) "X")
                (fmt "~A" (name student)))
           (cond ((equal (validate-drop-in student) t) (htm (:td (fmt "Drop-in")))) ; Check if Drop-in or not
                 (t (htm (:td (fmt "~A" (get-type (pass-of student))))))))))))
@@ -116,7 +125,8 @@
              (dolist (student (students))
                (htm
                 (:tr
-                 (:td (:a :href "#" :class "listLink" (fmt "~A" (name student)))) 
+                 ;; Edit student info on click 
+                 (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
                  (:td (fmt "~A" (email student)))
                  (:td (fmt "~A" (cond ((pass-p student) ; retrieve the latest pass details if existent
                                        (print-month-day (get-record-date (pass-of student))))
@@ -124,17 +134,85 @@
     (:div :id "actionlist"
           (:a :class "btn" :href "main" "Main"))))
 
-(define-easy-handler (add-student-to-class :uri "/add-student-to-class") ()
-  (standard-page (:title "Ashtanga Yoga Osaka | Add student to class")
-    (:div :class "buttonLinkList"
-          (dolist (student (students))
-            (htm
-             (:a :class "btn" :href (format nil "/validate-and-add?name=~A" (name student))
-                 (fmt "~A" (name student)))
-             (:br))))
-    (:div :id "actionlist"
-          (:a :class "btn" :href "/main" "Main")
-          (:a :class "btn" :href "/new-student-f" "New Student"))))
+;;;  Complicated, tedious, ugly-ass code to make the pop-up editPassDialog dialog display the correct information from the selected
+;;;pass and to pass it back correctly to the editStudent form. The editStudent form converts the pass to JSON, which is then picked
+;;;up by the page's Javascript and passed on to the editPassDialog once the onclick() event fires. Once the dialog's submit button
+;;;is clicked, the current values in the fields are then used to create a new JSON structure, copying the old one, with the new field
+;;;values. This is then used to replace the old one residing in form.passlist.selectedIndex.
+(define-easy-handler (student-name :uri "/student-info") (name)
+  (let ((student (student-from-name name)))
+    (standard-page (:title "Ashtanga Yoga Osaka | Student Page"
+                           :script (ps
+                                     (defun init ()
+                                       (open-close-modal-dialog "editPassDialog" "getPass" "submitPass"
+                                                                       ;; This is the pop-up dialog
+                                                                :open ((defvar frm (chain document (get-element-by-id "editPass")))
+                                                                       ;; The main form
+                                                                       (defvar form (chain document forms (named-item "editStudent")))
+                                                                       ;; Binds the current selected option from the drop-down list of passes
+                                                                       (defvar pass (chain *json* (parse (chain form passlist options[form passlist selected-index] value))))
+                                                                       ;;  Replacing the default values of the pop-up dialog with the current ones from the main form. Values starting with "o-" are the original values, they are retained so that the original pass can be recreated and used with (position) to find the index of the pass and replace it with the new pass.
+                                                                       (setf (chain frm "o-name" value) 
+                                                                             (chain form name value)) 
+                                                                       (setf (chain frm date value)
+                                                                             (chain pass date))
+                                                                       (setf (chain frm "o-date" value) 
+                                                                             (chain pass date))
+                                                                       (setf (chain frm type value)
+                                                                             (chain pass type))
+                                                                       (setf (chain frm "o-type" value) 
+                                                                             (chain pass type))
+                                                                       (setf (chain frm amt value)
+                                                                             (chain pass amt))
+                                                                       (setf (chain frm "o-amt" value)
+                                                                             (chain pass amt)))))
+                                     (setf (chain window onload) init)))
+      ;; Main form
+      (:form :action "/edit-student" :method "post" :id "editStudent"
+             (:p "Name" (:input :type "text" :name "name" :class "txt" :value (format nil "~A" (name student))))
+             (:P "Email" (:input :type "email" :name "email" :class "txt" :value (format nil "~A" (email student))))
+             (:p "Passes" (:select :name "passlist" 
+                                   (dolist (pass (pass student))
+                                     (htm
+                                      (:option :id "pass" :value (pass->json pass)
+                                               (fmt "~A ~A" (print-month (getf pass :date))
+                                                    (print-year (getf pass :date)))))))
+                 (:button :type "button" :id "getPass" :class "btn" "Get Pass"))
+             (:input :type "hidden" :name "old-name" :value name) ; old name of student, used for retrieving the correct instance
+             (:p (:input :type "submit" :value "Edit Info" :class "btn")))
+      ;; Pop-up dialog for editing passes
+      (:dialog :id "editPassDialog"
+               (:h1 "Edit Pass")
+               (:form :action "/edit-pass" :method "post" :id "editPass"
+                      (:input :type "hidden" :name "o-name" :value nil)
+                      (:input :type "hidden" :name "o-date" :value nil)
+                      (:input :type "hidden" :name "o-type" :value nil)
+                      (:input :type "hidden" :name "o-amt" :value nil)
+                      (:p "Date bought" (:input :type "text" :name "date" :class "txt"))
+                      (:p "Type" (:input :type "text" :name "type" :class "txt"))
+                      (:p "Amount Paid" (:input :type "text" :name "amt"))
+                      (:p (:button :type "submit" :class "btn" :id "submitPass" "Edit Pass")))))))
+
+(define-easy-handler (edit-pass :uri "/edit-pass") (o-name o-date o-type o-amt date type amt)
+  (find-and-edit-pass (student-from-name o-name)
+                      ;; Recreates old pass from string values passed from the form
+                      (make-pass :type (intern (string-upcase o-type) :shala-sys) :amt (parse-integer o-amt) :date (print-year-month-day->timestamp o-date))
+                      (pass (student-from-name o-name))
+                      ;; New pass created from string values passed from the form
+                      (make-pass :date (print-year-month-day->timestamp date) :type (intern (string-upcase type) :shala-sys) :amt (parse-integer amt)))
+  (redirect (format nil "/student-info?name=~A" o-name)))
+
+;; (define-easy-handler (add-student-to-class :uri "/add-student-to-class") ()
+;;   (standard-page (:title "Ashtanga Yoga Osaka | Add student to class")
+;;     (:div :class "buttonLinkList"
+;;           (dolist (student (students))
+;;             (htm
+;;              (:a :class "btn" :href (format nil "/validate-and-add?name=~A" (name student))
+;;                  (fmt "~A" (name student)))
+;;              (:br))))
+;;     (:div :id "actionlist"
+;;           (:a :class "btn" :href "/main" "Main")
+;;           (:a :class "btn" :href "/new-student-f" "New Student"))))
 
 ;; (define-easy-handler (new-student-f :uri "/new-student-f") ()
 ;;   (standard-page (:title "Ashtanga Yoga Osaka | Register New Student")
