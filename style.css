@@ -13,7 +13,7 @@
     }
 }
 
-@media only screen and (max-width: 700px) {
+@media screen and (max-width: 700px) {
 
 	/* Force table to not be like tables anymore */
 	table, thead, tbody, th, td, tr { 
@@ -47,6 +47,37 @@
 		padding-right: 10px; 
 		white-space: nowrap;
 	}
+
+    body #actionlist {
+        background-color: white;
+    }
+
+    body #actionlist .btn {
+        margin-right:0px;
+        display: block;
+        min-width: 50px;
+        margin:0;
+        text-align: center;
+    }
+}
+
+input[type=text], input[type=email] {
+    border-radius: 0;
+    -webkit-transition: all 0.30s ease-in-out;
+    -moz-transition: all 0.30s ease-in-out;
+    -ms-transition: all 0.30s ease-in-out;
+    -o-transition: all 0.30s ease-in-out;
+    outline: none;
+    padding: 3px 0px 3px 3px;
+    margin: 5px 1px 3px 0px;
+    border: 1px solid #DDDDDD;
+}
+
+input:focus {
+    box-shadow: 0 0 5px rgba(81, 203, 238, 1);
+    padding: 3px 0px 3px 3px;
+    margin: 5px 1px 3px 0px;
+    border: 1px solid rgba(81, 203, 238, 1);
 }
 
 body {
@@ -54,6 +85,31 @@ body {
     padding:0px;
     margin-left:auto;
     margin-right:auto;
+}
+
+.horizCenterForm {
+    margin-top: 10px;
+    margin-bottom: 10px;
+    margin-left: auto;
+    margin-right: auto;
+    width:20%;
+    min-width: 300px;
+    background-image: -webkit-gradient(
+	linear,
+	left top,
+	left bottom,
+	color-stop(0, #F5F2F0),
+	color-stop(1, #BFBFBF));
+    background-image: -o-linear-gradient(bottom, #F5F2F0 0%, #BFBFBF 100%);
+    background-image: -moz-linear-gradient(bottom, #F5F2F0 0%, #BFBFBF 100%);
+    background-image: -webkit-linear-gradient(bottom, #F5F2F0 0%, #BFBFBF 100%);
+    background-image: -ms-linear-gradient(bottom, #F5F2F0 0%, #BFBFBF 100%);
+    background-image: linear-gradient(to bottom, #F5F2F0 0%, #BFBFBF 100%);
+    border-radius: 10px 10px 10px 10px;
+    -moz-border-radius: 10px 10px 10px 10px;
+    -webkit-border-radius: 10px 10px 10px 10px;
+    border: 2px solid #59bfeb;
+    padding: 10px;
 }
 
 dialog {
@@ -355,3 +411,4 @@ a.modalList:hover {
     letter-spacing:0.2em;
     font-weight:bold;
 }
+

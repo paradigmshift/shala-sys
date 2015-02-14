@@ -167,31 +167,35 @@
                                                                        (setf (chain frm "o-amt" value)
                                                                              (chain pass amt)))))
                                      (setf (chain window onload) init)))
-      ;; Main form
-      (:form :action "/edit-student" :method "post" :id "editStudent"
-             (:p "Name" (:input :type "text" :name "name" :class "txt" :value (format nil "~A" (name student))))
-             (:P "Email" (:input :type "email" :name "email" :class "txt" :value (format nil "~A" (email student))))
-             (:p "Passes" (:select :name "passlist" 
-                                   (dolist (pass (pass student))
-                                     (htm
-                                      (:option :id "pass" :value (pass->json pass)
-                                               (fmt "~A ~A" (print-month (getf pass :date))
-                                                    (print-year (getf pass :date)))))))
-                 (:button :type "button" :id "getPass" :class "btn" "Get Pass"))
-             (:input :type "hidden" :name "old-name" :value name) ; old name of student, used for retrieving the correct instance
-             (:p (:input :type "submit" :value "Edit Info" :class "btn")))
+                   ;; Main form
+                   (:div :class "horizCenterForm"
+                         (:form :action "/edit-student" :method "post" :id "editStudent"
+                                (:p "Name" (:input :type "text" :name "name" :class "txt" :value (format nil "~A" (name student))))
+                                (:P "Email" (:input :type "email" :name "email" :class "txt" :value (format nil "~A" (email student))))
+                                (:p "Passes" (:select :name "passlist" 
+                                                      (dolist (pass (pass student))
+                                                        (htm
+                                                         (:option :id "pass" :value (pass->json pass)
+                                                                  (fmt "~A ~A" (print-month (getf pass :date))
+                                                                       (print-year (getf pass :date)))))))
+                                    (:button :type "button" :id "getPass" :class "btn" "Get Pass"))
+                                (:input :type "hidden" :name "old-name" :value name) ; old name of student, used for retrieving the correct instance
+                                (:p (:input :type "submit" :value "Edit Info" :class "btn"))))
       ;; Pop-up dialog for editing passes
-      (:dialog :id "editPassDialog"
-               (:h1 "Edit Pass")
-               (:form :action "/edit-pass" :method "post" :id "editPass"
-                      (:input :type "hidden" :name "o-name" :value nil)
-                      (:input :type "hidden" :name "o-date" :value nil)
-                      (:input :type "hidden" :name "o-type" :value nil)
-                      (:input :type "hidden" :name "o-amt" :value nil)
-                      (:p "Date bought" (:input :type "text" :name "date" :class "txt"))
-                      (:p "Type" (:input :type "text" :name "type" :class "txt"))
-                      (:p "Amount Paid" (:input :type "text" :name "amt"))
-                      (:p (:button :type "submit" :class "btn" :id "submitPass" "Edit Pass")))))))
+                   (:dialog :id "editPassDialog"
+                            (:h1 "Edit Pass")
+                            (:form :action "/edit-pass" :method "post" :id "editPass"
+                                   (:input :type "hidden" :name "o-name" :value nil)
+                                   (:input :type "hidden" :name "o-date" :value nil)
+                                   (:input :type "hidden" :name "o-type" :value nil)
+                                   (:input :type "hidden" :name "o-amt" :value nil)
+                                   (:p "Date bought" (:input :type "text" :name "date" :class "txt"))
+                                   (:p "Type" (:input :type "text" :name "type" :class "txt"))
+                                   (:p "Amount Paid" (:input :type "text" :name "amt"))
+                                   (:p (:button :type "submit" :class "btn" :id "submitPass" "Edit Pass"))))
+                   (:div :id "actionlist"
+                         (:a :class "btn" :href "main" "Main")
+                         (:a :class "btn" :href "student-list" "Student List"))))))
 
 (define-easy-handler (edit-pass :uri "/edit-pass") (o-name o-date o-type o-amt date type amt)
   (find-and-edit-pass (student-from-name o-name)
