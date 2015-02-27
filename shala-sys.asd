@@ -17,5 +17,6 @@
                (:file "time")
                (:file "db-functions")
                (:file "views")
-               (:file "queries")))
+               (:file "queries")
+               (:file "utils")))
 

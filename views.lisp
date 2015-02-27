@@ -195,7 +195,7 @@
                                    (:p (:button :type "submit" :class "btn" :id "submitPass" "Edit Pass"))))
                    (:div :id "actionlist"
                          (:a :class "btn" :href "main" "Main")
-                         (:a :class "btn" :href "student-list" "Student List"))))))
+                         (:a :class "btn" :href "student-list" "Student List")))))
 
 (define-easy-handler (edit-pass :uri "/edit-pass") (o-name o-date o-type o-amt date type amt)
   (find-and-edit-pass (student-from-name o-name)
@@ -205,26 +205,6 @@
                       ;; New pass created from string values passed from the form
                       (make-pass :date (print-year-month-day->timestamp date) :type (intern (string-upcase type) :shala-sys) :amt (parse-integer amt)))
   (redirect (format nil "/student-info?name=~A" o-name)))
-
-;; (define-easy-handler (add-student-to-class :uri "/add-student-to-class") ()
-;;   (standard-page (:title "Ashtanga Yoga Osaka | Add student to class")
-;;     (:div :class "buttonLinkList"
-;;           (dolist (student (students))
-;;             (htm
-;;              (:a :class "btn" :href (format nil "/validate-and-add?name=~A" (name student))
-;;                  (fmt "~A" (name student)))
-;;              (:br))))
-;;     (:div :id "actionlist"
-;;           (:a :class "btn" :href "/main" "Main")
-;;           (:a :class "btn" :href "/new-student-f" "New Student"))))
-
-;; (define-easy-handler (new-student-f :uri "/new-student-f") ()
-;;   (standard-page (:title "Ashtanga Yoga Osaka | Register New Student")
-;;     (:h1 "Register New Student")
-;;     (:form :action "/register-new-student" :method "post" :id "register-student"
-;;            (:p "Name" (:input :type "text" :name "name" :class "txt"))
-;;            (:p "Email" (:input :type "email" :name "email" :class "txt"))
-;;            (:p (:input :type "submit" :value "Register" :class "btn")))))
 
 (define-easy-handler (register-new-student :uri "/register-new-student") (name email)
   (register-student (new-student :name name :email email))
@@ -243,14 +223,15 @@
 
 (define-easy-handler (buy-pass-drop-in-f :uri "/buy-pass-drop-in-f") (name)
   (standard-page (:title "Ashtanga Yoga Osaka | Buy Pass or Drop-in")
-    (:h1 "Buy pass or drop-in") 
-    (:form :action (format nil "/add-pass-drop-in?name=~A" name) :method "post" :id "buy-pass-drop-in"
-           (:p "Morning Pass" (:input :type "checkbox" :name "pass" :value 'M))
-           (:p "Evening Pass" (:input :type "checkbox" :name "pass" :value 'E))
-           (:p "1 Week Pass" (:input :type "checkbox" :name "pass" :value 'W))
-           (:p "Drop-in" (:input :type "checkbox" :name "pass" :value 'D))
-           (:p "Amount" (:input :type "number" :name "amt"))
-           (:p (:input :type "submit" :value "Buy" :class "btn")))))
+    (:div :class "horizCenterForm"
+          (:h1 "Buy pass or drop-in") 
+          (:form :action (format nil "/add-pass-drop-in?name=~A" name) :method "post" :id "buy-pass-drop-in"
+                 (:p "Morning Pass" (:input :type "radio" :name "pass" :value 'M))
+                 (:p "Evening Pass" (:input :type "radio" :name "pass" :value 'E))
+                 (:p "1 Week Pass" (:input :type "radio" :name "pass" :value 'W))
+                 (:p "Drop-in" (:input :type "radio" :name "pass" :value 'D))
+                 (:p "Amount" (:input :type "number" :name "amt"))
+                 (:p (:input :type "submit" :value "Buy" :class "btn"))))))
 
 (define-easy-handler (add-pass-drop-in :uri "/add-pass-drop-in") (name pass amt)
   (cond ((equalp pass "M") (new-pass (student-from-name name)
