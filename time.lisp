@@ -17,7 +17,10 @@
   "Validate pass according to its type, validity based on *type-map*"
   (when (not (null (pass-p student)))
     (multiple-value-bind (start-date type) (pass-info (pass-of student))
-      (not (expired-p type start-date)))))
+      (if (or (equalp type 'm) (equalp type 'e))
+          (and (not (expired-p type start-date))
+               (equalp type (time-slots (local-time:timestamp-hour (time-now))))) 
+          (not (expired-p type start-date))))))
 
 (defun validate-drop-in (student)
   "Validate drop-in according to today's date"
@@ -25,3 +28,9 @@
     (local-time:timestamp= (local-time:timestamp-minimize-part (time-now) :hour)
                            (local-time:timestamp-minimize-part (getf (first (drop-in student)) :date)
                                                                :hour))))
+(defun time-slots (hour)
+  "Gives the time slot of the hour given. 'morning is morning mysore time slot, 'evening is the evening mysore time slot,
+   and 'between is everything in between."
+  (cond ((and (> hour 4) (< hour 10)) 'm)
+        ((and (> hour 16) (< hour 21) 'e))
+        (t 'between)))

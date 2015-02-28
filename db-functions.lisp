@@ -1,6 +1,6 @@
 (in-package :shala-sys)
 
-;;;; Functions responsible for writing, reading, and other DB-related procedures are defined here.
+;;;; functions responsible for writing, reading, and other DB-related procedures are defined here.
 
 (cl-mongo:db.use "shala-sys")
 
@@ -28,7 +28,7 @@
 
 ;;"Searches pass-list for pass and inserts a new pass in place of that with fields modified according to arg-list"
 (define-method-with-update find-and-edit-pass (student pass pass-list new-pass)
-  (multiple-value-bind (converted-pass converted-pass-list) (convert-pass-and-pass-list-dates pass pass-list)
+  (multiple-value-bind (converted-pass converted-pass-list) (pass-and-pass-list-dates->yy-mm-dd pass pass-list)
     (when (member converted-pass converted-pass-list :test #'equalp) 
       (progn
         (setf (elt pass-list (position converted-pass converted-pass-list :test #'equalp))
@@ -37,14 +37,14 @@
               ;; Sorts the pass dates non destructively then converts the date fields to local-time
               (pass-list-dates->timestamp (sort-pass-dates pass-list)))))))
 
-;; (defun convert-pass-and-pass-list-dates (pass pass-list)
+;; (defun pass-and-pass-list-dates->yy-mm-dd (pass pass-list)
 ;;   "Converts the date fields of pass and pass-list to a string in yy-mm-dd format"
 ;;   (let ((converted-pass (copy-list pass))
 ;;         (converted-pass-list (copy-tree pass-list)))
 ;;     (pass-list-dates->yy-mm-dd (append (list converted-pass) converted-pass-list))
 ;;     (values converted-pass converted-pass-list)))
 
-(defun convert-pass-and-pass-list-dates (pass pass-list)
+(defun pass-and-pass-list-dates->yy-mm-dd (pass pass-list)
   "Converts the date fields of pass and pass-list to a string in yy-mm-dd format"
   (values (first (pass-list-dates->yy-mm-dd (list pass)))
           (pass-list-dates->yy-mm-dd pass-list)))

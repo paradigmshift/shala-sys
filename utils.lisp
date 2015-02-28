@@ -3,9 +3,52 @@
 ;;;;  This is where all the utility functions/macros are defined. Utilities are classified as helper
 ;;;;functions/macros that make up the highest layer of abstraction.
 
-;;;;
+;;;; Filter/query functionality
+
+(defun filter-by (&key (year nil year-p)
+                    (month nil month-p)
+                    (type nil type-p))
+  "Remove members of the list not matching the given year and/or month and/or type, returns a
+   function that takes the list"
+  (lambda (lst)
+    (remove-if-not #'(lambda (element)
+                       (let* ((year-ok-p (or (not year-p)
+                                             (equalp (local-time:timestamp-year (get-record-date element))
+                                                     year)))
+                              (month-ok-p (or (not month-p)
+                                              (equalp (local-time:timestamp-month (get-record-date element))
+                                                      month)))
+                              (type-ok-p (or (not type-p) 
+                                             (equalp (get-type element)
+                                                     type)))
+                              (all-ok-p (and year-ok-p month-ok-p type-ok-p)))
+                         all-ok-p))
+                        lst)))
+
+(defun filter-by-year-month (year month)
+  (filter-by :year year :month month))
+
+(defun filter-by-year-month-type (year month type)
+  (filter-by :year year :month month :type type))
+
+(defun pass-of (student)
+  "Retrieve latest pass from student"
+  (first (pass student)))
+
+(defun get-record-date (record)
+  "Retrieve the start-date from the pass"
+  (getf record :date))
+
+(defun get-type (pass)
+  "Retrieve type from pass, m - morning, e - evening, w - 1 week"
+  (getf pass :type))
+
+(defun month-days-in-pass (pass)
+  "Returns how many days in the month of the pass purchase date"
+  (local-time:days-in-month (get-month (get-record-date pass))
+                            (get-year (get-record-date pass))))
+
 ;;;; Pass functionality
-;;;;
 
 ;; (defun pass-list-dates->yy-mm-dd (pass-list)
 ;;   "Converts the date fields of pass-list to a string in yy-mm-dd format"
@@ -75,13 +118,7 @@
 ;;                                         :date (unix->local (elt pass 3))
 ;;                                         :amt (elt pass 5))))
 
-(defun month-days-in-pass (pass)
-  (local-time:days-in-month (get-month (get-record-date pass))
-                            (get-year (get-record-date pass))))
-
-;;;;
 ;;;; Student plist and MongoDB functionality
-;;;;
 
 (defun drop-in-doc->plist (drop-in-list)
   (mapcar #'(lambda (drop-in)
@@ -127,9 +164,7 @@
 (defun register-student (student)
   (db.insert *student-list* (student->doc student)))
 
-;;;;
 ;;;; Timestamp functionality
-;;;;
 
 (defun time-now ()
   (local-time:now))
