@@ -175,6 +175,9 @@
 (defun unix->local (timestamp)
   (local-time:unix-to-timestamp timestamp))
 
+(defun get-hour (timestamp)
+  "Extract the hour from the timestamp"
+  (local-time:timestamp-hour timestamp))
 
 (defun get-year (timestamp)
   "Extract the year from the timestamp"

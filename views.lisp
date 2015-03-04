@@ -190,7 +190,9 @@
                                    (:input :type "hidden" :name "o-type" :value nil)
                                    (:input :type "hidden" :name "o-amt" :value nil)
                                    (:p "Date bought" (:input :type "text" :name "date" :class "txt"))
-                                   (:p "Type" (:input :type "text" :name "type" :class "txt"))
+                                   (dolist (type '(("Morning" . "m") ("Evening" . "e") ("Week" . "w")))
+                                     (htm
+                                      (:p (:input :type "radio" :name "type" :value (rest type) :id (rest type)) (fmt "~A" (first type)))))
                                    (:p "Amount Paid" (:input :type "text" :name "amt"))
                                    (:p (:button :type "submit" :class "btn" :id "submitPass" "Edit Pass"))))
                    (:div :id "actionlist"

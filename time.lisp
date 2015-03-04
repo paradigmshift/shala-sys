@@ -19,7 +19,7 @@
     (multiple-value-bind (start-date type) (pass-info (pass-of student))
       (if (or (equalp type 'm) (equalp type 'e))
           (and (not (expired-p type start-date))
-               (equalp type (time-slots (local-time:timestamp-hour (time-now))))) 
+               (equalp type (time-slots (get-hour (time-now))))) 
           (not (expired-p type start-date))))))
 
 (defun validate-drop-in (student)
