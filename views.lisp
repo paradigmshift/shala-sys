@@ -165,7 +165,12 @@
                                                                        (setf (chain frm amt value)
                                                                              (chain pass amt))
                                                                        (setf (chain frm "o-amt" value)
-                                                                             (chain pass amt)))))
+                                                                             (chain pass amt))))
+                                       (open-close-modal-dialog "editPassDialog" "newPass" "submitPass"
+                                                                :open ((defvar frm (chain document (get-element-by-id "editPass")))
+                                                                       (defvar form (chain document forms (named-item "editStudent")))
+                                                                       (setf (chain frm "o-name" value)
+                                                                             (chain form name value)))))
                                      (setf (chain window onload) init)))
                    ;; Main form
                    (:div :class "horizCenterForm"
@@ -178,34 +183,42 @@
                                                          (:option :id "pass" :value (pass->json pass)
                                                                   (fmt "~A ~A" (print-month (getf pass :date))
                                                                        (print-year (getf pass :date)))))))
-                                    (:button :type "button" :id "getPass" :class "btn" "Get Pass"))
+                                    (:button :type "button" :id "getPass" :class "btn" "Get Pass")
+                                    (:button :type "button" :id "newPass" :class "btn" "Add Pass"))
                                 (:input :type "hidden" :name "old-name" :value name) ; old name of student, used for retrieving the correct instance
                                 (:p (:input :type "submit" :value "Edit Info" :class "btn"))))
-      ;; Pop-up dialog for editing passes
+                   ;; Pop-up dialog for editing passes
                    (:dialog :id "editPassDialog"
-                            (:h1 "Edit Pass")
+                            (:h1 "Add | Edit Pass")
                             (:form :action "/edit-pass" :method "post" :id "editPass"
                                    (:input :type "hidden" :name "o-name" :value nil)
                                    (:input :type "hidden" :name "o-date" :value nil)
                                    (:input :type "hidden" :name "o-type" :value nil)
                                    (:input :type "hidden" :name "o-amt" :value nil)
-                                   (:p "Date bought" (:input :type "text" :name "date" :class "txt"))
+                                   (:p "Date bought" (:input :type "text" :class "txt" :name "date"))
                                    (dolist (type '(("Morning" . "m") ("Evening" . "e") ("Week" . "w")))
                                      (htm
                                       (:p (:input :type "radio" :name "type" :value (rest type) :id (rest type)) (fmt "~A" (first type)))))
                                    (:p "Amount Paid" (:input :type "text" :name "amt"))
-                                   (:p (:button :type "submit" :class "btn" :id "submitPass" "Edit Pass"))))
+                                   (:p "Delete Pass?" (:input :type "checkbox" :name "del"))
+                                   (:p (:button :type "submit" :class "btn" :id "submitPass" "Confirm"))))
                    (:div :id "actionlist"
                          (:a :class "btn" :href "main" "Main")
                          (:a :class "btn" :href "student-list" "Student List")))))
 
-(define-easy-handler (edit-pass :uri "/edit-pass") (o-name o-date o-type o-amt date type amt)
-  (find-and-edit-pass (student-from-name o-name)
-                      ;; Recreates old pass from string values passed from the form
-                      (make-pass :type (intern (string-upcase o-type) :shala-sys) :amt (parse-integer o-amt) :date (print-year-month-day->timestamp o-date))
-                      (pass (student-from-name o-name))
-                      ;; New pass created from string values passed from the form
-                      (make-pass :date (print-year-month-day->timestamp date) :type (intern (string-upcase type) :shala-sys) :amt (parse-integer amt)))
+(define-easy-handler (edit-pass :uri "/edit-pass") (o-name o-date o-type o-amt date type amt del)
+  (if (> (length o-date) 0) ; if length is greater than 0 then a pass was edited, otherwise, a brand new pass was added.
+      (if (equalp del "on")
+          (remove-pass (student-from-name o-name)
+                       (make-pass :type (intern (string-upcase o-type) :shala-sys) :amt (parse-integer o-amt) :date (print-year-month-day->timestamp o-date)))
+          (find-and-edit-pass (student-from-name o-name)
+                              ;; Recreates old pass from string values passed from the form
+                              (make-pass :type (intern (string-upcase o-type) :shala-sys) :amt (parse-integer o-amt) :date (print-year-month-day->timestamp o-date))
+                              (pass (student-from-name o-name))
+                              ;; New pass created from string values passed from the form
+                              (make-pass :date (print-year-month-day->timestamp date) :type (intern (string-upcase type) :shala-sys) :amt (parse-integer amt))))
+      (new-pass (student-from-name o-name)
+                (make-pass :date (print-year-month-day->timestamp date) :type (intern (string-upcase type) :shala-sys) :amt (parse-integer amt))))
   (redirect (format nil "/student-info?name=~A" o-name)))
 
 (define-easy-handler (register-new-student :uri "/register-new-student") (name email)

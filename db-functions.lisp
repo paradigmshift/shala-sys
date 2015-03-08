@@ -21,7 +21,14 @@
   (push drop-in (drop-in student)))
 
 (define-method-with-update new-pass (student pass)
-  (push pass (pass student)))
+  (push pass (pass student))
+  (setf (pass student)
+        (sort-pass-dates (pass student))))
+
+(define-method-with-update remove-pass (student pass)
+  (setf (pass student)
+        (sort-pass-dates (remove (first (pass-list-dates->yy-mm-dd (list pass)))
+                                 (pass-list-dates->yy-mm-dd (pass student)) :test #'equalp))))
 
 (define-method-with-update remove-last-pass (student)
   (setf (pass student) (rest (pass student))))
@@ -36,13 +43,6 @@
         (setf (pass student)
               ;; Sorts the pass dates non destructively then converts the date fields to local-time
               (pass-list-dates->timestamp (sort-pass-dates pass-list)))))))
-
-;; (defun pass-and-pass-list-dates->yy-mm-dd (pass pass-list)
-;;   "Converts the date fields of pass and pass-list to a string in yy-mm-dd format"
-;;   (let ((converted-pass (copy-list pass))
-;;         (converted-pass-list (copy-tree pass-list)))
-;;     (pass-list-dates->yy-mm-dd (append (list converted-pass) converted-pass-list))
-;;     (values converted-pass converted-pass-list)))
 
 (defun pass-and-pass-list-dates->yy-mm-dd (pass pass-list)
   "Converts the date fields of pass and pass-list to a string in yy-mm-dd format"
