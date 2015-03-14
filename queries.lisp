@@ -39,6 +39,30 @@
                                 (pass student)))))
     pass))
 
+(defun weekly-passes-on (year month student)
+  "Retrieves the weekly passes on the given year and month, checks also for carry-over
+   from the previous month"
+  (let* ((timestamp (local-time:encode-timestamp 1 1 1 1 1 month year))
+         (prev-month-passes (remove-if #'(lambda (pass)
+                                           (= 0
+                                              (nth-value 1 (prorate-till-month-end pass))))
+                                       (get-week-passes-on (get-year (adjust-months timestamp -1))
+                                                           (get-month (adjust-days timestamp -1))
+                                                           (pass student)))))
+    (append (get-week-passes-on year month (pass student))
+            prev-month-passes)))
+
+(defun week-pass-total-for (year month student)
+  "Adds the weekly pass total for the given year and month"
+  (let ((passes (weekly-passes-on year month student)))
+    (reduce #'+ (map 'list #'(lambda (pass)
+                               ;; weekly pass that was bought the month before but has carry-over
+                               (if (not (= (get-month (get-record-date pass))
+                                           month))
+                                   (nth-value 1 (prorate-till-month-end pass))
+                                   (prorate-till-month-end pass)))
+                     passes))))
+
 (defun drop-in-total-for (year month student)
   (sum (mapcar #'(lambda (drop-in)
                    (getf drop-in :amt))
@@ -74,9 +98,12 @@
                       7
                       month-days))
          (prorated-amt (* (/ (float (getf pass :amt)) divisor)
-                          (1+                                               ;Passes start the day
-                                                                            ; they are bought
-                           (- month-days start-day)))))
+                          (1+             ;Passes start the day they are bought
+                           (if (and (= divisor 7) ; means that the pass is a week pass
+                                    (> (- month-days start-day) 7)) ; there is no carry-over because
+                               6                                    ;the week pass finished within the
+                                                                    ;month
+                               (- month-days start-day))))))
     (values prorated-amt
             (- (getf pass :amt)
                prorated-amt))))
@@ -124,3 +151,6 @@
 (defun get-evening-passes-on (year month pass-list)
   "Retrieve all 'e (evening) type passes for given year and month from a list of passes"
   (funcall (filter-by-year-month-type year month 'e) pass-list))
+
+(defun get-week-passes-on (year month pass-list)
+  (funcall (filter-by-year-month-type year month 'w) pass-list))

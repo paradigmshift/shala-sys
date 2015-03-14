@@ -105,7 +105,35 @@
     (:div :id "actionlist"
           (:a :class "btn" :href "#" :id "addStudent"  "Add Student")
           (:a :class "btn" :href "student-list" "Student List")
-          (:a :class "btn" :href "reports" "Reports"))))
+          (:a :class "btn" :href "this-month-report" "Month Report"))))
+
+(define-easy-handler (this-month-report :uri "/this-month-report") ()
+  (standard-page (:title "Ashtanga Yoga Osaka | This month report")
+    (:table :class "maintable"
+            (:caption (fmt "~A ~A Report" (print-month (time-now)) (print-year (time-now))))
+            (:col)
+            (:tbody
+             (:tr (:th "Morning Passes")
+                  (:th "Amount"))
+             (dolist (student (this-month-passes))
+               (htm
+                (:tr
+                 (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
+                 (:td (fmt "~A" (pass-total-for (get-year (time-now)) (get-month (time-now)) student))))))
+             (:tr (:th "Evening Passes")))
+             (dolist (student (nth-value 1 (this-month-passes)))
+               (htm
+                (:tr
+                 (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
+                 (:td (fmt "~A" (pass-total-for (get-year (time-now)) (get-month (time-now)) student))))))
+             (:tr (:th "Week Passes"))
+             (dolist (student (nth-value 2 (this-month-passes)))
+               (htm
+                (:tr
+                 (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
+                 (:td (fmt "~A" (week-pass-total-for (get-year (time-now))
+                                                     (get-month (time-now))
+                                                     student)))))))))
 
 ;; Remove from today's list
 (define-easy-handler (remove-today :uri "/remove-today") (name) 
