@@ -88,25 +88,26 @@
   "Calculates the prorated amount of the pass based on purchase date and the number
    of days in the month. Returns as a second value the difference (carry-over for next month)
    between the total amount paid and the prorated amount."
-  (let* ((month-days ;; (local-time:days-in-month (local-time:timestamp-month (get-record-date pass))
-                     ;;                          (local-time:timestamp-year (get-record-date pass)))
-          (month-days-in-pass pass))
-         (start-day ;; (local-time:timestamp-day (get-record-date pass))
-           (get-day (get-record-date pass)))
-         ;;Monthly passes are prorated by dividing by days of the month, weekly passes by 7 days
-         (divisor (if (equalp (getf pass :type) 'w)
-                      7
-                      month-days))
-         (prorated-amt (* (/ (float (getf pass :amt)) divisor)
-                          (1+             ;Passes start the day they are bought
-                           (if (and (= divisor 7) ; means that the pass is a week pass
-                                    (> (- month-days start-day) 7)) ; there is no carry-over because
-                               6                                    ;the week pass finished within the
-                                                                    ;month
-                               (- month-days start-day))))))
-    (values prorated-amt
-            (- (getf pass :amt)
-               prorated-amt))))
+  (when pass
+    (let* ((month-days ;; (local-time:days-in-month (local-time:timestamp-month (get-record-date pass))
+            ;;                          (local-time:timestamp-year (get-record-date pass)))
+            (month-days-in-pass pass))
+           (start-day ;; (local-time:timestamp-day (get-record-date pass))
+            (get-day (get-record-date pass)))
+           ;;Monthly passes are prorated by dividing by days of the month, weekly passes by 7 days
+           (divisor (if (equalp (getf pass :type) 'w)
+                        7
+                        month-days))
+           (prorated-amt (* (/ (float (getf pass :amt)) divisor)
+                            (1+             ;Passes start the day they are bought
+                             (if (and (= divisor 7) ; means that the pass is a week pass
+                                      (> (- month-days start-day) 7)) ; there is no carry-over because
+                                 6                                    ;the week pass finished within the
+                                        ;month
+                                 (- month-days start-day))))))
+      (values prorated-amt
+              (- (getf pass :amt)
+                 prorated-amt)))))
 
 (defun carry-over+current (pass &optional prev-pass)
   "Add the previous month's pass's carry-over to the current month's prorated amount"
@@ -117,18 +118,43 @@
            (nth-value 1 (prorate-till-month-end prev-month)))
         (nth-value 0 (prorate-till-month-end current-month)))))
 
+;; (defun categorize-passes (year month student-list)
+;;   "Categorizes students based on their pass-type on given year and month"
+;;   (let ((morning '())
+;;         (evening '())
+;;         (week '()))
+;;     (map 'list #'(lambda (student)
+;;                    (let ((pass-type (get-type (current-or-prev-pass-on year month student))))
+;;                      (cond ((equalp pass-type 'm)
+;;                             (push student morning))
+;;                            ((equalp pass-type 'e)
+;;                             (push student evening))
+;;                            (t (push student week)))))
+;;          student-list)
+;;     (values morning evening week)))
+
 (defun categorize-passes (year month student-list)
-  "Categorizes students based on their pass-type on given year and month"
+  "Categorizes students based on their pass-type on given year and month."
   (let ((morning '())
         (evening '())
         (week '()))
     (map 'list #'(lambda (student)
-                   (let ((pass-type (get-type (current-or-prev-pass-on year month student))))
-                     (cond ((equalp pass-type 'm)
-                            (push student morning))
-                           ((equalp pass-type 'e)
-                            (push student evening))
-                           (t (push student week)))))
+                   (let ((timestamp (local-time:encode-timestamp 1 1 1 1 1 month year)))
+                     (when (or (not (null (get-morning-passes-on year month (pass student))))
+                               (not (null (nth-value 1 (prorate-till-month-end (first (get-morning-passes-on (get-year (adjust-months timestamp -1))
+                                                                                                             (get-month (adjust-months timestamp -1))
+                                                                                                             (pass student))))))))
+                       (push student morning))
+                     (when (or (not (null (get-evening-passes-on year month (pass student))))
+                               (not (null (nth-value 1 (prorate-till-month-end (first (get-evening-passes-on (get-year (adjust-months timestamp -1))
+                                                                                                             (get-month (adjust-months timestamp -1))
+                                                                                                             (pass student))))))))
+                       (push student evening))
+                     (when (or (not (null (get-week-passes-on year month (pass student))))
+                               (not (null (nth-value 1 (prorate-till-month-end (first (get-week-passes-on (get-year (adjust-months timestamp -1))
+                                                                                                             (get-month (adjust-months timestamp -1))
+                                                                                                             (pass student))))))))
+                       (push student week))))
          student-list)
     (values morning evening week)))
 
@@ -153,4 +179,15 @@
   (funcall (filter-by-year-month-type year month 'e) pass-list))
 
 (defun get-week-passes-on (year month pass-list)
+  "Retrieve all 'w (week) type passes for given year and month from a list of passes"
   (funcall (filter-by-year-month-type year month 'w) pass-list))
+
+(defun get-morning-pass-on (year month pass-list)
+  "Retrieve the morning pass from the given year and month from the list of passes
+   (this is meant to be an individual student's list of passes)"
+  (first (funcall (filter-by-year-month-type year month 'm) pass-list)))
+
+(defun get-evening-pass-on (year month pass-list)
+  "Retrieve the evening pass from the given year and month from the list of passes
+   (this is meant to be an individual student's list of passes)"
+  (first (funcall (filter-by-year-month-type year month 'e) pass-list)))

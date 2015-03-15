@@ -177,6 +177,22 @@ dialog::backdrop {
   text-decoration: none;
 }
 
+.leftArrow {
+    width: 50%;
+    margin-left:0;
+    margin-right:auto;
+    display: block;
+    text-align: left;
+}
+
+.rightArrow {
+    width : 50%;
+    margin-right:0;
+    margin-left:auto;
+    display: block;
+    text-align: right;
+}
+
 .cancelButton {
     float: left;
     -webkit-border-radius: 10;

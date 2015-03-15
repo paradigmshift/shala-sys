@@ -105,35 +105,61 @@
     (:div :id "actionlist"
           (:a :class "btn" :href "#" :id "addStudent"  "Add Student")
           (:a :class "btn" :href "student-list" "Student List")
-          (:a :class "btn" :href "this-month-report" "Month Report"))))
+          (:a :class "btn" :href (format nil "month-report?year=~A&month=~A" (get-year (time-now)) (get-month (time-now))) "Current Month Report"))))
 
-(define-easy-handler (this-month-report :uri "/this-month-report") ()
-  (standard-page (:title "Ashtanga Yoga Osaka | This month report")
-    (:table :class "maintable"
-            (:caption (fmt "~A ~A Report" (print-month (time-now)) (print-year (time-now))))
-            (:col)
-            (:tbody
-             (:tr (:th "Morning Passes")
-                  (:th "Amount"))
-             (dolist (student (this-month-passes))
-               (htm
-                (:tr
-                 (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
-                 (:td (fmt "~A" (pass-total-for (get-year (time-now)) (get-month (time-now)) student))))))
-             (:tr (:th "Evening Passes")))
-             (dolist (student (nth-value 1 (this-month-passes)))
-               (htm
-                (:tr
-                 (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
-                 (:td (fmt "~A" (pass-total-for (get-year (time-now)) (get-month (time-now)) student))))))
-             (:tr (:th "Week Passes"))
-             (dolist (student (nth-value 2 (this-month-passes)))
-               (htm
-                (:tr
-                 (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
-                 (:td (fmt "~A" (week-pass-total-for (get-year (time-now))
-                                                     (get-month (time-now))
-                                                     student)))))))))
+(define-easy-handler (month-report :uri "/month-report") (year month)
+  (let ((year (parse-integer year))
+        (month (parse-integer month)))
+    (standard-page (:title "Ashtanga Yoga Osaka | This month report")
+      (:table :class "maintable"
+              (:caption (fmt "~A ~A Report" year month))
+              (:col)
+              (:tbody
+               (:tr (:th "Morning Passes")
+                    (:th "Amount"))
+               (dolist (student (passes-on year month))
+                 (htm
+                  (:tr
+                   (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
+                   (:td (fmt "~A" (pass-total-for year month student))))))
+               (:tr (:th "Evening Passes"))
+               (dolist (student (nth-value 1 (passes-on year month)))
+                 (htm
+                  (:tr
+                   (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
+                   (:td (fmt "~A" (pass-total-for year month student))))))
+               (:tr (:th "Week Passes"))
+               (dolist (student (nth-value 2 (passes-on year month)))
+                 (htm
+                  (:tr
+                   (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
+                   (:td (fmt "~A" (week-pass-total-for year month student))))))
+               (:tr (:th "Drop in"))
+               (dolist (student (students))
+                 (when (get-drop-in-on year month (drop-in student))
+                   (htm
+                    (:tr
+                     (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
+                     (:td (fmt "~A" (drop-in-total-for year month student)))))))))
+      (:div :class "container"
+            (let ((timestamp (local-time:encode-timestamp 1 1 1 1 1 month year)))
+              (htm
+               (:a :href (format nil "/month-report?year=~A&month=~A" (get-year (adjust-months timestamp -1))
+                                 (get-month (adjust-months timestamp -1)))
+                   :class "leftArrow"
+                   "Previous")
+               (:a :href (format nil "/month-report?year=~A&month=~A" (get-year (adjust-months timestamp 1))
+                                 (get-month (adjust-months timestamp 1)))
+                   :class "rightArrow"
+                   "Next")))
+            (:form :action "/month-report" :method "post" :id "monthReportQuery"
+                   (:p "Year: " (:input :type "number" :name "year")
+                       "Month: " (:input :type "number" :name "month")
+                       (:input :type "submit" :class "btn" :id "submitQuery" :value "Get Report"))))
+      (:div :id "actionlist"
+            (:a :class "btn" :href "main" "Main")
+            (:a :class "btn" :href "student-list" "Student List")
+            (:a :class "btn" :href (format nil "month-report?year=~A&month=~A" (get-year (time-now)) (get-month (time-now))) "Current Month Report")))))
 
 ;; Remove from today's list
 (define-easy-handler (remove-today :uri "/remove-today") (name) 
