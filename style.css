@@ -193,6 +193,12 @@ dialog::backdrop {
     text-align: right;
 }
 
+.maintable .totalHighlight {
+    background: #3491d9;
+    color: #ffffff;
+    font-size: 15px;
+}
+
 .cancelButton {
     float: left;
     -webkit-border-radius: 10;
@@ -357,6 +363,10 @@ a.modalList:hover {
 	font-weight:normal;
 	color:#606060;
 }
+
+/* #monthReport.maintable td:first-child { */
+/*     text-align: left; */
+/* } */
 
 .maintable tr:last-child td{
 	border-width:0px 1px 0px 0px;

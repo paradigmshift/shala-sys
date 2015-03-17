@@ -111,36 +111,73 @@
   (let ((year (parse-integer year))
         (month (parse-integer month)))
     (standard-page (:title "Ashtanga Yoga Osaka | This month report")
-      (:table :class "maintable"
+      (:table :class "maintable" :id "monthReport"
               (:caption (fmt "~A ~A Report" year month))
-              (:col)
+              (:col :style "width:5%")
+              (:col :style "width:30%")
+              (:col :style "width:30%")
               (:tbody
-               (:tr (:th "Morning Passes")
+               (:tr (:th)
+                    (:th "Morning Passes")
                     (:th "Amount"))
-               (dolist (student (passes-on year month))
+               (loop for student in (reverse (passes-on year month))
+                    for i from 1 upto (length (passes-on year month))
+                  do
+                    (htm
+                     (:tr
+                      (:td (fmt "~d" i))
+                      (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
+                      (:td (fmt "&yen ~2$" (morning-pass-total-for year month student))))))
+               ;; Total amount from morning passes
+               (:tr (:td)
+                    (:td)
+                    (:td :class "totalHighlight" (fmt "&yen ~$" (morning-passes-total-for year month (passes-on year month)))))
+               (:tr (:th)
+                    (:th "Evening Passes"))
+               (loop for student in (reverse (nth-value 1 (passes-on year month)))
+                    for i from 1 upto (length (passes-on year month))
+                    do
                  (htm
                   (:tr
+                   (:td (fmt "~d" i))
                    (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
-                   (:td (fmt "~A" (pass-total-for year month student))))))
-               (:tr (:th "Evening Passes"))
-               (dolist (student (nth-value 1 (passes-on year month)))
+                   (:td (fmt "&yen ~2$" (evening-pass-total-for year month student))))))
+               ;; Total amount from evening passes
+               (:tr (:td)
+                    (:td)
+                    (:td :class "totalHighlight" (fmt "&yen ~$" (evening-passes-total-for year month (nth-value 1 (passes-on year month))))))
+               (:tr (:th)
+                    (:th "Week Passes"))
+               (loop for student in (reverse (nth-value 2 (passes-on year month)))
+                    for i from 1 upto (length (passes-on year month))
+                  do
                  (htm
                   (:tr
+                   (:td (fmt "~d" i))
                    (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
-                   (:td (fmt "~A" (pass-total-for year month student))))))
-               (:tr (:th "Week Passes"))
-               (dolist (student (nth-value 2 (passes-on year month)))
-                 (htm
-                  (:tr
-                   (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
-                   (:td (fmt "~A" (week-pass-total-for year month student))))))
+                   (:td (fmt "&yen ~2$" (week-pass-total-for year month student))))))
+               ;; Total amount from week passes
+               (:tr (:td)
+                    (:td)
+                    (:td :class "totalHighlight" (fmt "&yen ~2$" (week-passes-total-for year month (nth-value 2 (passes-on year month))))))
                (:tr (:th "Drop in"))
                (dolist (student (students))
                  (when (get-drop-in-on year month (drop-in student))
                    (htm
                     (:tr
                      (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
-                     (:td (fmt "~A" (drop-in-total-for year month student)))))))))
+                     (:td (fmt "~A" (drop-in-total-for year month student)))))))
+               (:tr (:td)
+                    (:th (fmt "Total Amount"))
+                    (:td :class "totalHighlight" (fmt "&yen ~2$" (+ (reduce #'+ (mapcar #'(lambda (student)
+                                                               (pass-total-for year month student #'get-morning-pass-on))
+                                                           (passes-on year month)))
+                                       (reduce #'+ (mapcar #'(lambda (student)
+                                                               (pass-total-for year month student #'get-evening-pass-on))
+                                                           (nth-value 1 (passes-on year month))))
+                                       (reduce #'+ (mapcar #'(lambda (student)
+                                                               (week-pass-total-for year month student))
+                                                           (nth-value 2 (passes-on year month))))))))))
       (:div :class "container"
             (let ((timestamp (local-time:encode-timestamp 1 1 1 1 1 month year)))
               (htm

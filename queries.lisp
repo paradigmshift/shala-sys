@@ -11,30 +11,68 @@
   (multiple-value-bind (morning evening week) (categorize-passes year month (students-with-pass-on year month))
       (values morning evening week)))
 
-(defun pass-total-for (year month student)
+(defun morning-pass-total-for (year month student)
+  "Adds the morning pass total (carry-over+current) for student"
+  (pass-total-for year month student #'get-morning-pass-on))
+
+(defun evening-pass-total-for (year month student)
+  "Adds the evening pass total (carry-over+current) for student"
+  (pass-total-for year month student #'get-evening-pass-on))
+
+(defun week-pass-total-for (year month student)
+  "Adds the weekly pass total for the given year and month"
+  (let ((passes (weekly-passes-on year month student)))
+    (reduce #'+ (map 'list #'(lambda (pass)
+                               ;; weekly pass that was bought the month before but has carry-over
+                               (if (not (= (get-month (get-record-date pass))
+                                           month))
+                                   (nth-value 1 (prorate-till-month-end pass))
+                                   (prorate-till-month-end pass)))
+                     passes))))
+
+(defun morning-passes-total-for (year month student-list)
+  (passes-total-for year month student-list #'pass-total-for #'get-morning-pass-on))
+
+(defun evening-passes-total-for (year month student-list)
+  (passes-total-for year month student-list #'pass-total-for #'get-evening-pass-on))
+
+(defun week-passes-total-for (year month student-list)
+  (passes-total-for year month student-list #'week-pass-total-for))
+
+(defun passes-total-for (year month student-list pass-total-selector-fn &optional filter-fn)
+  "Returns the total amount earned for the given year and month. pass-total-selector-fn is the function
+   that retrieves the student's passes based on the date and year. filter-fn is the selector function's
+   filter, narrowing down the passes based on it's type, i.e. morning or evening."
+  (reduce #'+ (mapcar #'(lambda (student)
+                          (if filter-fn
+                              (funcall pass-total-selector-fn year month student filter-fn)
+                              (funcall pass-total-selector-fn year month student)))
+                      student-list)))
+
+(defun pass-total-for (year month student &optional (fn #'get-pass-on))
   "Retrieve the pass of the year and month given and return the carry-over + prorated
    amount if applicable, or just the carry-over amount from the previous pass (if existent)
    if there is no pass for the the given year and month."
-  (let ((pass (current-or-prev-pass-on year month student)))
+  (let ((pass (current-or-prev-pass-on year month student fn)))
     (when pass
       (if (equalp (get-month (get-record-date pass))                          ;Pass for given year and
                                                                              ; month exists
                   month)
           (carry-over+current pass
-                              (get-pass-on (get-year (adjust-months (get-record-date pass) -1))
+                              (funcall fn (get-year (adjust-months (get-record-date pass) -1))
                                            (get-month (adjust-months (get-record-date pass) -1))
                                            (pass student)))
           ;; Pass for given month doesn't exist, defaulting to carry-over from last month
           (nth-value 1 (prorate-till-month-end pass))))))  
 
-(defun current-or-prev-pass-on (year month student)
+(defun current-or-prev-pass-on (year month student &optional (fn #'get-pass-on))
   "Returns the current month's or last month's pass"
   (let* ((timestamp (local-time:encode-timestamp 1 1 1 1 1 month year))
-         (pass (if (get-pass-on year month (pass student))                   ;Search for pass from
+         (pass (if (funcall fn year month (pass student))                   ;Search for pass from
                                                                              ; pass list
-                   (get-pass-on year month (pass student))
+                   (funcall fn year month (pass student))
                    ;;;No pass for the given year and month, try extracting the previous month's pass
-                   (get-pass-on (get-year (adjust-months timestamp -1))
+                   (funcall fn (get-year (adjust-months timestamp -1))
                                 (get-month (adjust-months timestamp -1))
                                 (pass student)))))
     pass))
@@ -51,17 +89,6 @@
                                                            (pass student)))))
     (append (get-week-passes-on year month (pass student))
             prev-month-passes)))
-
-(defun week-pass-total-for (year month student)
-  "Adds the weekly pass total for the given year and month"
-  (let ((passes (weekly-passes-on year month student)))
-    (reduce #'+ (map 'list #'(lambda (pass)
-                               ;; weekly pass that was bought the month before but has carry-over
-                               (if (not (= (get-month (get-record-date pass))
-                                           month))
-                                   (nth-value 1 (prorate-till-month-end pass))
-                                   (prorate-till-month-end pass)))
-                     passes))))
 
 (defun drop-in-total-for (year month student)
   (sum (mapcar #'(lambda (drop-in)
@@ -117,21 +144,6 @@
         (+ (prorate-till-month-end current-month)
            (nth-value 1 (prorate-till-month-end prev-month)))
         (nth-value 0 (prorate-till-month-end current-month)))))
-
-;; (defun categorize-passes (year month student-list)
-;;   "Categorizes students based on their pass-type on given year and month"
-;;   (let ((morning '())
-;;         (evening '())
-;;         (week '()))
-;;     (map 'list #'(lambda (student)
-;;                    (let ((pass-type (get-type (current-or-prev-pass-on year month student))))
-;;                      (cond ((equalp pass-type 'm)
-;;                             (push student morning))
-;;                            ((equalp pass-type 'e)
-;;                             (push student evening))
-;;                            (t (push student week)))))
-;;          student-list)
-;;     (values morning evening week)))
 
 (defun categorize-passes (year month student-list)
   "Categorizes students based on their pass-type on given year and month."
