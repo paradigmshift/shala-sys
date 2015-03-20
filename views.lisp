@@ -236,7 +236,7 @@
                            :script (ps
                                      (defun init ()
                                        (open-close-modal-dialog "editPassDialog" "getPass" "submitPass"
-                                                                       ;; This is the pop-up dialog
+                                                                ;; This is the pop-up dialog
                                                                 :open ((defvar frm (chain document (get-element-by-id "editPass")))
                                                                        ;; The main form
                                                                        (defvar form (chain document forms (named-item "editStudent")))
@@ -261,41 +261,93 @@
                                                                 :open ((defvar frm (chain document (get-element-by-id "editPass")))
                                                                        (defvar form (chain document forms (named-item "editStudent")))
                                                                        (setf (chain frm "o-name" value)
+                                                                             (chain form name value))))
+                                       (open-close-modal-dialog "editDropInDialog" "getDropIn" "submitDropIn"
+                                                                :open ((defvar frm (chain document (get-element-by-id "editDropIn")))
+                                                                       (defvar form (chain document forms (named-item "editStudent")))
+                                                                       (defvar drop-in (chain *json* (parse (chain form drop-in-list options[form drop-in-list selected-index] value))))
+                                                                       (setf (chain frm "o-name" value)
+                                                                             (chain form name value))
+                                                                       (setf (chain frm date value)
+                                                                             (chain drop-in date))
+                                                                       (setf (chain frm "o-date" value)
+                                                                             (chain drop-in date))
+                                                                       (setf (chain frm amt value)
+                                                                             (chain drop-in amt))
+                                                                       (setf (chain frm "o-amt" value)
+                                                                             (chain drop-in amt))))
+                                       (open-close-modal-dialog "editDropInDialog" "newDropIn" "submitDropIn"
+                                                                :open ((defvar frm (chain document (get-element-by-id "editDropIn")))
+                                                                       (defvar form (chain document forms (named-item "editStudent")))
+                                                                       (setf (chain frm "o-name" value)
                                                                              (chain form name value)))))
                                      (setf (chain window onload) init)))
-                   ;; Main form
-                   (:div :class "horizCenterForm"
-                         (:form :action "/edit-student" :method "post" :id "editStudent"
-                                (:p "Name" (:input :type "text" :name "name" :class "txt" :value (format nil "~A" (name student))))
-                                (:P "Email" (:input :type "email" :name "email" :class "txt" :value (format nil "~A" (email student))))
-                                (:p "Passes" (:select :name "passlist" 
-                                                      (dolist (pass (pass student))
-                                                        (htm
-                                                         (:option :id "pass" :value (pass->json pass)
-                                                                  (fmt "~A ~A" (print-month (getf pass :date))
-                                                                       (print-year (getf pass :date)))))))
-                                    (:button :type "button" :id "getPass" :class "btn" "Get Pass")
-                                    (:button :type "button" :id "newPass" :class "btn" "Add Pass"))
-                                (:input :type "hidden" :name "old-name" :value name) ; old name of student, used for retrieving the correct instance
-                                (:p (:input :type "submit" :value "Edit Info" :class "btn"))))
-                   ;; Pop-up dialog for editing passes
-                   (:dialog :id "editPassDialog"
-                            (:h1 "Add | Edit Pass")
-                            (:form :action "/edit-pass" :method "post" :id "editPass"
-                                   (:input :type "hidden" :name "o-name" :value nil)
-                                   (:input :type "hidden" :name "o-date" :value nil)
-                                   (:input :type "hidden" :name "o-type" :value nil)
-                                   (:input :type "hidden" :name "o-amt" :value nil)
-                                   (:p "Date bought" (:input :type "text" :class "txt" :name "date"))
-                                   (dolist (type '(("Morning" . "m") ("Evening" . "e") ("Week" . "w")))
-                                     (htm
-                                      (:p (:input :type "radio" :name "type" :value (rest type) :id (rest type)) (fmt "~A" (first type)))))
-                                   (:p "Amount Paid" (:input :type "text" :name "amt"))
-                                   (:p "Delete Pass?" (:input :type "checkbox" :name "del"))
-                                   (:p (:button :type "submit" :class "btn" :id "submitPass" "Confirm"))))
-                   (:div :id "actionlist"
-                         (:a :class "btn" :href "main" "Main")
-                         (:a :class "btn" :href "student-list" "Student List")))))
+      ;; Main form
+      (:div :class "horizCenterForm"
+            (:form :action "/edit-student" :method "post" :id "editStudent"
+                   (:p "Name" (:input :type "text" :name "name" :class "txt" :value (format nil "~A" (name student))))
+                   (:P "Email" (:input :type "email" :name "email" :class "txt" :value (format nil "~A" (email student))))
+                   (:p "Passes" (:select :name "passlist" 
+                                         (dolist (pass (pass student))
+                                           (htm
+                                            (:option :id "pass" :value (pass->json pass)
+                                                     (fmt "~A ~A" (print-month (getf pass :date))
+                                                          (print-year (getf pass :date)))))))
+                       (:button :type "button" :id "getPass" :class "btn" "Get Pass")
+                       (:button :type "button" :id "newPass" :class "btn" "Add Pass"))
+                   (:p "Drop-ins" (:select :name "dropInList"
+                                           (dolist (drop-in (drop-in student))
+                                             (htm
+                                              (:option :id "dropIn" :value (pass->json drop-in)
+                                                       (fmt "~A ~A ~A" (print-day (getf drop-in :date))
+                                                            (print-month (getf drop-in :date))
+                                                            (print-year (getf drop-in :date)))))))
+                       (:button :type "button" :id "getDropIn" :class "btn" "Get Drop in")
+                       (:button :type "button" :id "newDropIn" :class "btn" "New Drop in"))
+                   (:input :type "hidden" :name "old-name" :value name) ; old name of student, used for retrieving the correct instance
+                   (:p (:input :type "submit" :value "Edit Info" :class "btn"))))
+      ;; Pop-up dialog for editing drop-ins
+      (:dialog :id "editDropInDialog"
+               (:h1 "Add | Edit Drop-in")
+               (:form :action "/edit-drop-in" :method "post" :id "editDropIn"
+                      (:input :type "hidden" :name "o-name" :value nil)
+                      (:input :type "hidden" :name "o-date" :value nil)
+                      (:input :type "hidden" :name "o-amt" :value nil)
+                      (:p "Date bought" (:input :type "text" :class "txt" :name "date"))
+                      (:p "Amount" (:input :type "number" :name "amt"))
+                      (:p "Delete Drop in?" (:input :type "checkbox" :name "del"))
+                      (:p (:button :type "submit" :class "btn" :id "submitDropIn" "Confirm"))))
+      ;; Pop-up dialog for editing passes
+      (:dialog :id "editPassDialog"
+               (:h1 "Add | Edit Pass")
+               (:form :action "/edit-pass" :method "post" :id "editPass"
+                      (:input :type "hidden" :name "o-name" :value nil)
+                      (:input :type "hidden" :name "o-date" :value nil)
+                      (:input :type "hidden" :name "o-type" :value nil)
+                      (:input :type "hidden" :name "o-amt" :value nil)
+                      (:p "Date bought" (:input :type "text" :class "txt" :name "date"))
+                      (dolist (type '(("Morning" . "m") ("Evening" . "e") ("Week" . "w")))
+                        (htm
+                         (:p (:input :type "radio" :name "type" :value (rest type) :id (rest type)) (fmt "~A" (first type)))))
+                      (:p "Amount Paid" (:input :type "text" :name "amt"))
+                      (:p "Delete Pass?" (:input :type "checkbox" :name "del"))
+                      (:p (:button :type "submit" :class "btn" :id "submitPass" "Confirm"))))
+      (:div :id "actionlist"
+            (:a :class "btn" :href "main" "Main")
+            (:a :class "btn" :href "student-list" "Student List")))))
+
+(define-easy-handler (edit-drop-in :uri "/edit-drop-in") (o-name o-date o-amt date amt del)
+  (if (> (length o-date) 0)
+      (if (equalp del "on")
+          (remove-drop-in (student-from-name o-name)
+                          (make-drop-in :amt (parse-integer o-amt) :date (print-year-month-day->timestamp o-date)))
+          (find-and-edit-drop-in (student-from-name o-name)
+                                 (make-drop-in :amt (parse-integer o-amt) :date (print-year-month-day->timestamp o-date))
+                                 (drop-in (student-from-name o-name))
+                                 (make-drop-in :date (print-year-month-day->timestamp date) :amt (parse-integer amt))))
+      (new-drop-in (student-from-name o-name)
+                   (make-drop-in :date (print-year-month-day->timestamp date) :amt (parse-integer amt))))
+  (redirect (format nil "/student-info?name=~A" o-name)))
 
 (define-easy-handler (edit-pass :uri "/edit-pass") (o-name o-date o-type o-amt date type amt del)
   (if (> (length o-date) 0) ; if length is greater than 0 then a pass was edited, otherwise, a brand new pass was added.

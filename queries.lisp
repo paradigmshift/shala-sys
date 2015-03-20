@@ -149,7 +149,8 @@
   "Categorizes students based on their pass-type on given year and month."
   (let ((morning '())
         (evening '())
-        (week '()))
+        (week '())
+        (drop-in '()))
     (map 'list #'(lambda (student)
                    (let ((timestamp (local-time:encode-timestamp 1 1 1 1 1 month year)))
                      (when (or (not (null (get-morning-passes-on year month (pass student))))
@@ -166,9 +167,11 @@
                                (not (null (nth-value 1 (prorate-till-month-end (first (get-week-passes-on (get-year (adjust-months timestamp -1))
                                                                                                              (get-month (adjust-months timestamp -1))
                                                                                                              (pass student))))))))
-                       (push student week))))
+                       (push student week))
+                     (when (not (null (get-drop-in-on year month (drop-in student))))
+                       (push student drop-in))))
          student-list)
-    (values morning evening week)))
+    (values morning evening week drop-in)))
 
 (defun pass-info (pass)
   "Retrieve start-date and type of pass"
@@ -203,3 +206,6 @@
   "Retrieve the evening pass from the given year and month from the list of passes
    (this is meant to be an individual student's list of passes)"
   (first (funcall (filter-by-year-month-type year month 'e) pass-list)))
+
+(defun get-drop-in-on (year month pass-list)
+  (funcall (filter-by-year-month year month) pass-list))

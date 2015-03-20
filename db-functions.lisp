@@ -30,6 +30,11 @@
         (sort-pass-dates (remove (first (pass-list-dates->yy-mm-dd (list pass)))
                                  (pass-list-dates->yy-mm-dd (pass student)) :test #'equalp))))
 
+(define-method-with-update remove-drop-in (student drop-in)
+  (setf (drop-in student)
+        (sort-pass-dates (remove (first (pass-list-dates->yy-mm-dd (list drop-in)))
+                                 (pass-list-dates->yy-mm-dd (drop-in student)) :test #'equalp))))
+
 (define-method-with-update remove-last-pass (student)
   (setf (pass student) (rest (pass student))))
 
@@ -41,6 +46,16 @@
         (setf (elt pass-list (position converted-pass converted-pass-list :test #'equalp))
               new-pass)
         (setf (pass student)
+              ;; Sorts the pass dates non destructively then converts the date fields to local-time
+              (pass-list-dates->timestamp (sort-pass-dates pass-list)))))))
+
+(define-method-with-update find-and-edit-drop-in (student pass pass-list new-pass)
+  (multiple-value-bind (converted-pass converted-pass-list) (pass-and-pass-list-dates->yy-mm-dd pass pass-list)
+    (when (member converted-pass converted-pass-list :test #'equalp) 
+      (progn
+        (setf (elt pass-list (position converted-pass converted-pass-list :test #'equalp))
+              new-pass)
+        (setf (drop-in student)
               ;; Sorts the pass dates non destructively then converts the date fields to local-time
               (pass-list-dates->timestamp (sort-pass-dates pass-list)))))))
 
