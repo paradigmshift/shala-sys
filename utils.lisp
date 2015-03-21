@@ -215,7 +215,8 @@
                                           :hour))))
 
 (defun print-month-day (timestamp)
-  (format nil "~A ~A" (print-month timestamp) (print-day timestamp)))
+  (when timestamp
+    (format nil "~A ~A" (print-month timestamp) (print-day timestamp))))
 
 (defun adjust-days (timestamp days)
   "Add or subract days from the timestamp, returns a new timestamp"

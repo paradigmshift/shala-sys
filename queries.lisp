@@ -8,8 +8,8 @@
 
 (defun passes-on (year month)
   "Retrieve passes on given year and month as 3 values, morning passes, evening passes, and week passes"
-  (multiple-value-bind (morning evening week) (categorize-passes year month (students-with-pass-on year month))
-      (values morning evening week)))
+  (multiple-value-bind (morning evening week drop-in) (categorize-passes year month (students-with-pass-on year month))
+      (values morning evening week drop-in)))
 
 (defun morning-pass-total-for (year month student)
   "Adds the morning pass total (carry-over+current) for student"
@@ -94,6 +94,30 @@
   (sum (mapcar #'(lambda (drop-in)
                    (getf drop-in :amt))
                (get-drop-in-on year month (drop-in student)))))
+
+(defun drop-in-total-on (year month student-list)
+  (sum (mapcar #'(lambda (student)
+                   (drop-in-total-for year month student))
+               student-list)))
+
+(defun listify-drop-ins-on (year month student-list)
+  (remove-if #'null (mapcar #'(lambda (student)
+                                (when (get-drop-in-on year month (drop-in student))
+                                  (cons (name student) (drop-in student))))
+                            student-list)))
+
+(defun pp-listify-drop-ins-on (year month student-list)
+  (let ((lst (listify-drop-ins-on year month student-list))
+        (drop-in-lst '()))
+    (mapcar #'(lambda (student)
+                (mapcar #'(lambda (drop-in)
+                            (push (list :name (first student)
+                                        :date (getf drop-in :date)
+                                        :amt (getf drop-in :amt))
+                                  drop-in-lst))
+                        (rest student)))
+            lst)
+    drop-in-lst))
 
 (defun student-total-for (year month student)
   (+ (pass-total-for year month student)

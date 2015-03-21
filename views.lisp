@@ -135,7 +135,7 @@
                (:tr (:th)
                     (:th "Evening Passes"))
                (loop for student in (reverse (nth-value 1 (passes-on year month)))
-                    for i from 1 upto (length (passes-on year month))
+                  for i from 1 upto (length (nth-value 1 (passes-on year month)))
                     do
                  (htm
                   (:tr
@@ -149,7 +149,7 @@
                (:tr (:th)
                     (:th "Week Passes"))
                (loop for student in (reverse (nth-value 2 (passes-on year month)))
-                    for i from 1 upto (length (passes-on year month))
+                  for i from 1 upto (length (nth-value 2 (passes-on year month)))
                   do
                  (htm
                   (:tr
@@ -161,12 +161,23 @@
                     (:td)
                     (:td :class "totalHighlight" (fmt "&yen ~2$" (week-passes-total-for year month (nth-value 2 (passes-on year month))))))
                (:tr (:th "Drop in"))
-               (dolist (student (students))
-                 (when (get-drop-in-on year month (drop-in student))
-                   (htm
-                    (:tr
-                     (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
-                     (:td (fmt "~A" (drop-in-total-for year month student)))))))
+               (loop for drop-in in (pp-listify-drop-ins-on year month (nth-value 3 (categorize-passes year month (students))))
+                  for i from 1 upto (length (pp-listify-drop-ins-on year month (nth-value 3 (categorize-passes year month (students)))))
+                  do
+                    (htm
+                     (:tr
+                      (:td (fmt "~d" i))
+                      (:td (:a :href (format nil "/student-info?name=~A" (getf drop-in :name)) :class "listLink" (fmt "~A" (getf drop-in :name))))
+                      (:td (fmt "&yen ~2f" (getf drop-in :amt))))))
+               (:tr (:td)
+                    (:td)
+                    (:td :class "totalHighlight" (fmt "&yen ~2f" (drop-in-total-on year month (nth-value 3 (categorize-passes year month (students)))))))
+               ;; (dolist (student (students))
+               ;;   (when (get-drop-in-on year month (drop-in student))
+               ;;     (htm
+               ;;      (:tr
+               ;;       (:td (:a :href (format nil "/student-info?name=~A" (name student)) :class "listLink" (fmt "~A" (name student))))
+               ;;       (:td (fmt "~A" (drop-in-total-for year month student)))))))
                (:tr (:td)
                     (:th (fmt "Total Amount"))
                     (:td :class "totalHighlight" (fmt "&yen ~2$" (+ (reduce #'+ (mapcar #'(lambda (student)
@@ -177,7 +188,8 @@
                                                            (nth-value 1 (passes-on year month))))
                                        (reduce #'+ (mapcar #'(lambda (student)
                                                                (week-pass-total-for year month student))
-                                                           (nth-value 2 (passes-on year month))))))))))
+                                                           (nth-value 2 (passes-on year month))))
+                                       (drop-in-total-on year month (nth-value 3 (categorize-passes year month (students))))))))))
       (:div :class "container"
             (let ((timestamp (local-time:encode-timestamp 1 1 1 1 1 month year)))
               (htm
