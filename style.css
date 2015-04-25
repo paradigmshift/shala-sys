@@ -316,6 +316,11 @@ a.modalList:hover {
 	margin:0px;padding:0px;
 }
 
+.maintable th {
+    background-color: black;
+    color: white;
+}
+
 .maintable tr:last-child td:last-child {
 	-moz-border-radius-bottomright:0px;
 	-webkit-border-bottom-right-radius:0px;

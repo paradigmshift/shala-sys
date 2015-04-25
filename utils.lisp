@@ -95,30 +95,11 @@
   (let ((pass-list-copy (copy-tree pass-list)))
     (pass-list-dates-> pass-list-copy :fn #'unix->local)))
 
-;; (defun convert-passes (pass-list)
-;;   (lambda-map pass-list pass (setf (getf pass :date)
-;;                                    (local->unix (getf pass :date)))
-;;               pass))
-
 (defun pass-dates-local->unix (pass-list)
   (let ((pass-list-copy (copy-tree pass-list)))
     (pass-list-dates-> pass-list-copy :fn #'local->unix)))
 
-;; (defun convert-drop-in (drop-in-list)
-;;   (lambda-map drop-in-list drop-in (setf (getf drop-in :date)
-;;                                          (local->unix (getf drop-in :date)))
-;;               drop-in))
-
-;; (defun reconvert-drop-in (drop-in-list)
-;;   (lambda-map drop-in-list drop-in (make-drop-in :date (unix->local (elt drop-in 1))
-;;                                                  :amt (elt drop-in 3))))
-
-;; (defun reconvert-passes (pass-list)
-;;   (lambda-map pass-list pass (make-pass :type (intern (elt pass 1) :shala-sys)
-;;                                         :date (unix->local (elt pass 3))
-;;                                         :amt (elt pass 5))))
-
-;;;; Student plist and MongoDB functionality
+;;; Student plist and MongoDB functionality
 
 (defun drop-in-doc->plist (drop-in-list)
   (mapcar #'(lambda (drop-in)
@@ -149,6 +130,28 @@
                  :pass (pass-dates-unix->local (pass-doc->plist (get-element "pass" doc))) ;pass plist is converted to string when saved in the database
                  :drop-in (pass-dates-unix->local (drop-in-doc->plist (get-element "drop-in" doc)))
                  :attendance (get-element "attendance" doc)))
+
+(defun expense->doc (expense)
+  "Creates MongoDB document from expense object"
+  (with-slots (date comment amount) expense
+    ($ ($ "date" (local->unix date))
+       ($ "comment" comment)
+       ($ "amount" amount))))
+
+(defun doc->expense (doc)
+  "Creates expense object from MongoDB document"
+  (make-instance 'expense :date (unix->local (get-element "date" doc))
+                 :comment (get-element "comment" doc)
+                 :amount (get-element "amount" doc)))
+
+(defun register-expense (expense)
+  (db.insert *expense-list* (expense->doc expense)))
+
+(defun expenses ()
+  "Retrieves the list of expenses from the DB, sorted"
+  (map 'list #'(lambda (doc)
+                 (doc->expense doc))
+       (docs (iter (db.sort *expense-list* :all :field "date")))))
 
 (defun students ()
   "Retrieves the list of students from the DB, sorted"

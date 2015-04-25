@@ -133,7 +133,8 @@
                     (:td)
                     (:td :class "totalHighlight" (fmt "&yen ~$" (morning-passes-total-for year month (passes-on year month)))))
                (:tr (:th)
-                    (:th "Evening Passes"))
+                    (:th "Evening Passes")
+                    (:th))
                (loop for student in (reverse (nth-value 1 (passes-on year month)))
                   for i from 1 upto (length (nth-value 1 (passes-on year month)))
                     do
@@ -147,7 +148,8 @@
                     (:td)
                     (:td :class "totalHighlight" (fmt "&yen ~$" (evening-passes-total-for year month (nth-value 1 (passes-on year month))))))
                (:tr (:th)
-                    (:th "Week Passes"))
+                    (:th "Week Passes")
+                    (:th))
                (loop for student in (reverse (nth-value 2 (passes-on year month)))
                   for i from 1 upto (length (nth-value 2 (passes-on year month)))
                   do
@@ -160,7 +162,9 @@
                (:tr (:td)
                     (:td)
                     (:td :class "totalHighlight" (fmt "&yen ~2$" (week-passes-total-for year month (nth-value 2 (passes-on year month))))))
-               (:tr (:th "Drop in"))
+               (:tr (:th)
+                    (:th "Drop in")
+                    (:th))
                (loop for drop-in in (pp-listify-drop-ins-on year month (nth-value 3 (categorize-passes year month (students))))
                   for i from 1 upto (length (pp-listify-drop-ins-on year month (nth-value 3 (categorize-passes year month (students)))))
                   do

@@ -26,11 +26,29 @@
                :accessor attendance
                :initform nil)))
 
+(defclass expense ()
+  ((date :initarg :date
+         :accessor date)
+   (comment :initarg :comment
+            :accessor comment)
+   (amount :initarg :amount
+           :accessor amount)))
+
 (defmethod print-object ((object student) stream)
   "Make the student class information readable from the REPL"
   (print-unreadable-object (object stream :type t)
     (with-slots (name email pass drop-in) object
       (format stream "name: ~s email: ~s pass: ~s drop-in :~s" name email pass drop-in))))
+
+(defmethod print-object ((object expense) stream)
+  "Make the expense class information readable from the REPL"
+  (print-unreadable-object (object stream :type t)
+    (with-slots (date comment amount) object
+      (format stream "date: ~s comment: ~s amount: ~s" date comment amount))))
+
+(defun new-expense (&key date comment amount)
+  "Instantiate new expense"
+  (make-instance 'expense :date date :comment comment :amount amount))
 
 (defun new-student (&key name email)
   "Instantiate new student"

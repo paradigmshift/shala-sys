@@ -6,6 +6,8 @@
 
 (defparameter *student-list* "students")
 
+(defparameter *expense-list* "expenses")
+
 (defmacro define-method-with-update (method-name (&rest args) &body body)
   "Defines a method and an :after method for persisting changes by the method to the database"
   (let ((student (first args)))
