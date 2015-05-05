@@ -1,9 +1,31 @@
 (in-package #:shala-sys)
 
-;;;;  This is where all the utility functions/macros are defined. Utilities are classified as helper
-;;;;functions/macros that make up the highest layer of abstraction.
+;;;;  This is where all the general functions/macros are defined. Utilities are
+;;;;classified as helper functions/macros that make up the highest layer of
+;;;;abstraction.
 
-;;;; Filter/query functionality
+;;------------------------------------------------------------------------------
+;; Class instantiation
+;;------------------------------------------------------------------------------
+
+(defun new-expense (&key date comment amount)
+  "Instantiate new expense"
+  (make-instance 'expense :date date :comment comment :amount amount))
+
+(defun new-student (&key name email)
+  "Instantiate new student"
+  (make-instance 'student :name name :email email))
+
+(defun make-pass (&key type date amt)
+  "Return a list with the pass information"
+  (list :type type :date date :amt amt))
+
+(defun make-drop-in (&key date amt)
+  (list :date date :amt amt))
+
+;;------------------------------------------------------------------------------
+;; Filter and query utilities
+;;------------------------------------------------------------------------------
 
 (defun filter-by (&key (year nil year-p)
                     (month nil month-p)
@@ -35,8 +57,12 @@
   "Retrieve latest pass from student"
   (first (pass student)))
 
+(defun pass-p (student)
+  "Test if student has pass, predicate"
+  (not (null (pass student))))
+
 (defun get-record-date (record)
-  "Retrieve the start-date from the pass"
+  "Retrieve the date field from a plist"
   (getf record :date))
 
 (defun get-type (pass)
@@ -48,126 +74,9 @@
   (local-time:days-in-month (get-month (get-record-date pass))
                             (get-year (get-record-date pass))))
 
-;;;; Pass functionality
-
-;; (defun pass-list-dates->yy-mm-dd (pass-list)
-;;   "Converts the date fields of pass-list to a string in yy-mm-dd format"
-;;   (map 'list #'(lambda (pass)
-;;                  (setf (getf pass :date)
-;;                        (print-year-month-day (get-record-date pass))))
-;;        pass-list)
-;;   pass-list)
-
-(defun pass-list-dates->yy-mm-dd (pass-list)
-  "Converts the date fields of pass-list to a string in yy-mm-dd format"
-  (pass-list-dates-> pass-list :fn #'print-year-month-day))
-
-(defun pass-list-dates->timestamp (pass-list)
-  "Converts the date fields of pass-list from yy-mm-dd to a local-time:timestamp"
-  (map 'list #'(lambda (pass)
-                 (when (not (typep (getf pass :date) 'local-time:timestamp))
-                   (setf (getf pass :date)
-                         (print-year-month-day->timestamp (get-record-date pass)))))
-       pass-list)
-  pass-list)
-
-(defun sort-pass-dates (pass-list)
-  "Sorts the list of passes according to dates in descending order. It first transforms the dates from
-   yy-mm-dd to local-time, then from local-time to unix, sorts, then back again to local-time"
-  (let ((pass-list-copy (copy-tree pass-list)))
-    (let ((pass-list-copy
-           (pass-list-dates-> (pass-list-dates->timestamp pass-list-copy)
-                              :fn #'local->unix)))
-      (sort pass-list-copy #'> :key #'get-record-date)
-      (pass-list-dates-> pass-list-copy :fn #'unix->local))))
-
-(defun pass-list-dates-> (pass-list &key fn)
-  "Converts the date fields of a list of passes based on the function passed to fn. For example, if
-   if unix->local is passed in, it will try to convert the date field from unix time to local-time."
-  (let ((pass-list-copy (copy-tree pass-list)))
-    (map 'list #'(lambda (pass)
-                   (setf (getf pass :date)
-                         (funcall fn (get-record-date pass))))
-         pass-list-copy)
-    pass-list-copy))
-
-(defun pass-dates-unix->local (pass-list)
-  (let ((pass-list-copy (copy-tree pass-list)))
-    (pass-list-dates-> pass-list-copy :fn #'unix->local)))
-
-(defun pass-dates-local->unix (pass-list)
-  (let ((pass-list-copy (copy-tree pass-list)))
-    (pass-list-dates-> pass-list-copy :fn #'local->unix)))
-
-;;; Student plist and MongoDB functionality
-
-(defun drop-in-doc->plist (drop-in-list)
-  (mapcar #'(lambda (drop-in)
-              (make-drop-in :date (elt drop-in 1)
-                            :amt (elt drop-in 3)))
-          drop-in-list))
-
-(defun pass-doc->plist (pass-list)
-  (mapcar #'(lambda (pass)
-              (make-pass :type (intern (elt pass 1) :shala-sys)
-                         :date (elt pass 3)
-                         :amt (elt pass 5)))
-          pass-list))
-
-(defun student->doc (student)
-  "Creates MongoDB document from student object"
-  (with-slots (name email pass drop-in attendance) student
-    ($ ($ "name" name)
-       ($ "email" email)
-       ($ "pass" (pass-dates-local->unix pass))
-       ($ "drop-in" (pass-dates-local->unix drop-in))
-       ($ "attendance" attendance))))
-
-(defun doc->student (doc)
-  "Creates student object from MongoDB document"
-  (make-instance 'student :name (get-element "name" doc)
-                 :email (get-element "email" doc)
-                 :pass (pass-dates-unix->local (pass-doc->plist (get-element "pass" doc))) ;pass plist is converted to string when saved in the database
-                 :drop-in (pass-dates-unix->local (drop-in-doc->plist (get-element "drop-in" doc)))
-                 :attendance (get-element "attendance" doc)))
-
-(defun expense->doc (expense)
-  "Creates MongoDB document from expense object"
-  (with-slots (date comment amount) expense
-    ($ ($ "date" (local->unix date))
-       ($ "comment" comment)
-       ($ "amount" amount))))
-
-(defun doc->expense (doc)
-  "Creates expense object from MongoDB document"
-  (make-instance 'expense :date (unix->local (get-element "date" doc))
-                 :comment (get-element "comment" doc)
-                 :amount (get-element "amount" doc)))
-
-(defun register-expense (expense)
-  (db.insert *expense-list* (expense->doc expense)))
-
-(defun expenses ()
-  "Retrieves the list of expenses from the DB, sorted"
-  (map 'list #'(lambda (doc)
-                 (doc->expense doc))
-       (docs (iter (db.sort *expense-list* :all :field "date")))))
-
-(defun students ()
-  "Retrieves the list of students from the DB, sorted"
-  (map 'list #'(lambda (doc)
-                 (doc->student doc))
-       (docs (iter (db.sort *student-list* :all :field "name")))))
-
-(defun student-from-name (name)
-  (let ((found-students (docs (db.find *student-list* ($ "name" name)))))
-    (when found-students
-      (doc->student (first found-students)))))
-
-(defun register-student (student)
-  (db.insert *student-list* (student->doc student)))
-
-;;;; Timestamp functionality
+;;------------------------------------------------------------------------------
+;; Timestamp utilities
+;;------------------------------------------------------------------------------
 
 (defun time-now ()
   (local-time:now))

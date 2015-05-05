@@ -46,25 +46,6 @@
     (with-slots (date comment amount) object
       (format stream "date: ~s comment: ~s amount: ~s" date comment amount))))
 
-(defun new-expense (&key date comment amount)
-  "Instantiate new expense"
-  (make-instance 'expense :date date :comment comment :amount amount))
-
-(defun new-student (&key name email)
-  "Instantiate new student"
-  (make-instance 'student :name name :email email))
-
-(defun make-pass (&key type date amt)
-  "Return a list with the pass information"
-  (list :type type :date date :amt amt))
-
-(defun make-drop-in (&key date amt)
-  (list :date date :amt amt))
-
-(defun pass-p (student)
-  "Test if student has pass, predicate"
-  (not (null (pass student))))
-
 (defun remove-nil (list)
   "Remove nil elements from list"
   (remove-if #'null list))
